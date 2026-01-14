@@ -1,6 +1,5 @@
 package io.astrodesk;
 
-import io.astrodesk.ticket.Ticket;
 import io.astrodesk.ticket.TicketService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
