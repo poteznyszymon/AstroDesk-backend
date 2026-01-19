@@ -1,0 +1,51 @@
+dn: ou=users,dc=astrodesk
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=astrodesk
+objectClass: organizationalUnit
+ou: groups
+
+dn: uid=jan,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: jan
+cn: Jan Kowalski
+sn: Kowalski
+mail: jan@astrodesk
+userPassword: Password123!
+
+dn: uid=ania,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: ania
+cn: Anna Nowak
+sn: Nowak
+mail: ania@astrodesk
+userPassword: Password123!
+
+dn: uid=piotr,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: piotr
+cn: Piotr Zielinski
+sn: Zielinski
+mail: piotr@astrodesk
+userPassword: Password123!
+
+dn: uid=kasia,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: kasia
+cn: Katarzyna Wisniewska
+sn: Wisniewska
+mail: kasia@astrodesk
+userPassword: Password123!
+
+dn: cn=admins,ou=groups,dc=astrodesk
+objectClass: groupOfNames
+cn: admins
+member: uid=jan,ou=users,dc=astrodesk
+member: uid=ania,ou=users,dc=astrodesk
+
+dn: cn=devs,ou=groups,dc=astrodesk
+objectClass: groupOfNames
+cn: devs
+member: uid=piotr,ou=users,dc=astrodesk
+member: uid=kasia,ou=users,dc=astrodesk
