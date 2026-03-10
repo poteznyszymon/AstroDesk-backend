@@ -1,5 +1,6 @@
 package io.astrodesk;
 
+import io.astrodesk.ticket.TicketEntity;
 import io.astrodesk.ticket.TicketService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,11 +14,11 @@ public class AstroDeskBackendApplication {
         TicketService service = context.getBean(TicketService.class);
 
         // Tymczasowe testy manualne
-        /*
-        Ticket t1 = service.createSampleTicket_1();
-        Ticket t2 = service.createSampleTicket_2();
-        Ticket t3 = service.createSampleTicket_3();
 
+        TicketEntity t1 = service.createSampleTicket_1();
+        TicketEntity t2 = service.createSampleTicket_2();
+        TicketEntity t3 = service.createSampleTicket_3();
+        /*
         service.showTickets().forEach(System.out::println);
         System.out.println(service.getTicket(2));
 
@@ -26,8 +27,12 @@ public class AstroDeskBackendApplication {
         service.startTicket(2);
         service.resolveTicket(2);
         service.closeTicket(2);
-        service.showTickets().forEach(System.out::println);
         */
+        service.acceptTicket(1);
+        service.cancelTicket(3);
+
+        //service.showTickets().forEach(System.out::println);
+
     }
 
 }

@@ -1,18 +1,42 @@
 package io.astrodesk.ticket;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import jakarta.persistence.*;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
-public class Ticket {
-    private int id;                     // Tymczasowa zmienna do testow
+@Entity
+@JsonPropertyOrder({"id","title","description","status","priority","author","date"})
+public class TicketEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
+    private Long id;
+
+    @NotBlank
+    @Column(nullable = false, length = 100)
     private String title;
+
+    @NotBlank
+    @Column(nullable = false)
     private String description;
+
+    @Enumerated(EnumType.STRING)
     private TicketStatus status;
+
+    @Enumerated(EnumType.STRING)
     private TicketPriority priority;
+
+    @NotNull
     private LocalDate date;
+
+    @NotBlank
     private String author;
 
-    public Ticket(int newId, String newTitle, String newDescription, TicketPriority newPriority, String newAuthor) {
-        this.id = newId;
+    public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, String newAuthor) {
         this.title = newTitle;
         this.description = newDescription;
         this.status = TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE;
@@ -20,6 +44,8 @@ public class Ticket {
         this.date = LocalDate.now();
         this.author = newAuthor;
     }
+
+    protected TicketEntity() {}
 
     public void accept() {
         if(status != TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE) {
@@ -62,11 +88,32 @@ public class Ticket {
 
      */
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public String toString() {
-        return "Ticket = " + id + "/" + title + "/" + description + "/" + status + "/" + priority + "/" + date + "/" + author;
+    public String getTitle() {
+        return title;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public TicketStatus getStatus() {
+        return status;
+    }
+
+    public TicketPriority getPriority() {
+        return priority;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
 }
