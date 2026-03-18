@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "Tickets")
 @JsonPropertyOrder({"id","title","description","status","priority","author","date"})
 public class TicketEntity {
     @Id
