@@ -25,7 +25,7 @@ services:
     depends_on:
       - ldap
     ports:
-      - "8080:80"
+      - "8081:80"
     restart: unless-stopped
   postgres:
     image: postgres:18
@@ -37,7 +37,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql
     restart: unless-stopped
 
 volumes:

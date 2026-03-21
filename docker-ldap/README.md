@@ -44,7 +44,7 @@ The project directory must contain:
 ### phpLDAPadmin
 Web interface available at:
 ```
-http://localhost:8080
+http://localhost:8081
 ```
 
 LDAP login credentials:
