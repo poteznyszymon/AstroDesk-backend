@@ -4,10 +4,8 @@ public enum InventoryStatus {
     DO_WYDANIA,
     WYDANE,
     DOSTEPNE,
-    ZAJETE,
     W_TRAKCIE,
-    CANCELLED,
-    PRZYJETY,
+    WYPORZYCZONE,
     SERWIS,
     UTYLIZACJA
 

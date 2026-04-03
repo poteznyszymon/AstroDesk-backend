@@ -31,6 +31,13 @@ public class InventoryController {
     ) {
         return inventoryService.updateInventoryPartial(id, updated);
     }
+    @DeleteMapping("/{id}")
+    public void deleteInventory(
+            @PathVariable Long id,
+            @RequestParam String deletedBy
+    ) {
+        inventoryService.deleteInventory(id, deletedBy);
+    }
 
     @PostMapping
     public Inventory createInventory(@RequestBody Inventory inventory) {
@@ -44,8 +51,7 @@ public class InventoryController {
                 inventory.getInvoiceNumber(),
                 inventory.getLocation(),
                 inventory.getPriority(),
-                inventory.getAuthor(),
-                inventory.getNotes()
+                inventory.getAuthor()
         );
     }
 

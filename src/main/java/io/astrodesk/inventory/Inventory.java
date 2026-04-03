@@ -4,8 +4,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventory")
@@ -22,12 +25,21 @@ import java.time.LocalDate;
         "assignedTo",
         "assignedBy",
         "assignedDate",
+        "notes",
         "status",
         "priority",
         "author",
-        "notes"
+        "createdAt",
+        "updatedAt"
 })
 public class Inventory {
+
+    @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InventoryNotes> notes = new ArrayList<>();
+
+    public List<InventoryNotes> getNotes() {
+        return notes;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -72,8 +84,14 @@ public class Inventory {
     @NotBlank
     private String author;
 
-    @Column(length = 1000)
-    private String notes;
+
+
+    // daty systemowe
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 
     public Inventory(
             String name,
@@ -85,8 +103,7 @@ public class Inventory {
             String invoiceNumber,
             String location,
             InventoryPriority priority,
-            String author,
-            String notes
+            String author
     ) {
         this.name = name;
         this.itemType = itemType;
@@ -98,11 +115,22 @@ public class Inventory {
         this.location = location;
         this.priority = priority;
         this.author = author;
-        this.notes = notes;
         this.status = InventoryStatus.DOSTEPNE;
     }
 
     protected Inventory() {
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void assign(String assignedTo, String assignedBy) {
@@ -196,9 +224,15 @@ public class Inventory {
         return author;
     }
 
-    public String getNotes() {
-        return notes;
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -239,7 +273,4 @@ public class Inventory {
         this.author = author;
     }
 
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
 }
