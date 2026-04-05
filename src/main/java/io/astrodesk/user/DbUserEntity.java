@@ -1,13 +1,16 @@
 package io.astrodesk.user;
 
+import io.astrodesk.ticket.TicketEntity;
 import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity
 @Table(name = "Users")
 public class DbUserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long userId;
 
     @Column(unique = true, nullable = false)
     private String username;
@@ -24,10 +27,13 @@ public class DbUserEntity {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    private List<TicketEntity> tickets;
+
     public DbUserEntity() {}
 
     public DbUserEntity(Long id, String username, String firstName, String lastName, String email, UserRole role) {
-        this.id = id;
+        this.userId = id;
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -35,8 +41,8 @@ public class DbUserEntity {
         this.role = role;
     }
 
-    public Long getId() {
-        return id;
+    public Long getUserId() {
+        return userId;
     }
 
     public String getUsername() {

@@ -67,8 +67,15 @@ public class LdapUserService {
     private UserRole determineRole(Collection<? extends GrantedAuthority> authorities) {
         for (GrantedAuthority auth : authorities) {
             String role = auth.getAuthority().toUpperCase();
-            if (role.contains("ADMINS")) return UserRole.ADMIN;
-            if (role.contains("DEVS")) return UserRole.DEV;
+            if(role.contains("TICKET")) {
+                return UserRole.TICKET_ADMIN;
+            }
+            else if(role.contains("ASSET")) {
+                return UserRole.ASSET_ADMIN;
+            }
+            else if(role.contains("HEAD")) {
+                return UserRole.HEADADMIN;
+            }
         }
         return UserRole.USER;
     }

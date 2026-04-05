@@ -6,6 +6,46 @@ dn: ou=groups,dc=astrodesk
 objectClass: organizationalUnit
 ou: groups
 
+dn: uid=grzegorz,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: grzegorz
+cn: Grzegorz Gajewski
+sn: Gajewski
+mail: grzegorz@astrodesk
+userPassword: Password123!
+
+dn: uid=laura,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: laura
+cn: Laura Mazurska
+sn: Mazurska
+mail: laura@astrodesk
+userPassword: Password123!
+
+dn: uid=maciej,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: maciej
+cn: Maciej Piekarski
+sn: Piekarski
+mail: maciej@astrodesk
+userPassword: Password123!
+
+dn: uid=marta,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: marta
+cn: Marta Kaminska
+sn: Kaminska
+mail: marta@astrodesk
+userPassword: Password123!
+
+dn: uid=kazimierz,ou=users,dc=astrodesk
+objectClass: inetOrgPerson
+uid: kazimierz
+cn: Kazimierz Kowalczyk
+sn: Kowalczyk
+mail: kazimierz@astrodesk
+userPassword: Password123!
+
 dn: uid=jan,ou=users,dc=astrodesk
 objectClass: inetOrgPerson
 uid: jan
@@ -38,14 +78,20 @@ sn: Wisniewska
 mail: kasia@astrodesk
 userPassword: Password123!
 
-dn: cn=admins,ou=groups,dc=astrodesk
+dn: cn=TICKET_ADMIN,ou=groups,dc=astrodesk
 objectClass: groupOfNames
-cn: admins
+cn: TICKET_ADMIN
+member: uid=marta,ou=users,dc=astrodesk
+member: uid=kasia,ou=users,dc=astrodesk
+
+dn: cn=ASSET_ADMIN,ou=groups,dc=astrodesk
+objectClass: groupOfNames
+cn: ASSET_ADMIN
+member: uid=kazimierz,ou=users,dc=astrodesk
+member: uid=maciej,ou=users,dc=astrodesk
+
+dn: cn=HEADADMIN,ou=groups,dc=astrodesk
+objectClass: groupOfNames
+cn: HEADADMIN
 member: uid=jan,ou=users,dc=astrodesk
 member: uid=ania,ou=users,dc=astrodesk
-
-dn: cn=devs,ou=groups,dc=astrodesk
-objectClass: groupOfNames
-cn: devs
-member: uid=piotr,ou=users,dc=astrodesk
-member: uid=kasia,ou=users,dc=astrodesk

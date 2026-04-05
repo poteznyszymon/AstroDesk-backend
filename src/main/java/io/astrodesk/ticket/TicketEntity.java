@@ -1,6 +1,7 @@
 package io.astrodesk.ticket;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.astrodesk.user.DbUserEntity;
 import jakarta.persistence.*;
 
 import jakarta.validation.constraints.NotBlank;
@@ -10,12 +11,13 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "Tickets")
-@JsonPropertyOrder({"id","title","description","status","priority","author","date"})
+@JsonPropertyOrder({"ticketId","title","description","status","priority","author","date"})
 public class TicketEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
-    private Long id;
+    private Long ticketId;
 
     @NotBlank
     @Column(nullable = false, length = 100)
@@ -31,13 +33,14 @@ public class TicketEntity {
     @Enumerated(EnumType.STRING)
     private TicketPriority priority;
 
-    @NotNull
     private LocalDate date;
 
-    @NotBlank
-    private String author;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId")
+    private DbUserEntity author;
 
-    public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, String newAuthor) {
+    public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, DbUserEntity newAuthor) {
         this.title = newTitle;
         this.description = newDescription;
         this.status = TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE;
@@ -50,7 +53,7 @@ public class TicketEntity {
 
     public void accept() {
         if(status != TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE) {
-            throw new IllegalStateException("Ticket status must be OCZEKIWANIE_NA_AKCEPTACJE to acccept");
+            throw new IllegalStateException("Ticket status must be OCZEKIWANIE_NA_AKCEPTACJE to accept");
         }
         this.status = TicketStatus.OTWARTE;
     }
@@ -89,8 +92,8 @@ public class TicketEntity {
 
      */
 
-    public long getId() {
-        return id;
+    public long getTicketId() {
+        return ticketId;
     }
 
     public String getTitle() {
@@ -113,8 +116,8 @@ public class TicketEntity {
         return date;
     }
 
-    public String getAuthor() {
-        return author;
+    public Long getAuthor() {
+        return author.getUserId();
     }
 
 }

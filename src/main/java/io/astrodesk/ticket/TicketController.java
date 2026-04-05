@@ -1,5 +1,7 @@
 package io.astrodesk.ticket;
 
+import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,9 +12,11 @@ import java.util.List;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final UserRepository userRepository;
 
-    public TicketController(TicketService ticketService) {
+    public TicketController(TicketService ticketService, UserRepository userRepository) {
         this.ticketService = ticketService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -25,9 +29,10 @@ public class TicketController {
         return ticketService.getTicket(id);
     }
 
-    @PostMapping
+    @PostMapping("/add")
     public TicketEntity createTicket(@RequestBody TicketEntity t) {
-        return ticketService.saveTicket(t.getTitle(), t.getDescription(), t.getPriority(), t.getAuthor());
+        DbUserEntity author = userRepository.findById(t.getAuthor()).orElseThrow(() -> new IllegalArgumentException("User not found!"));
+        return ticketService.saveTicket(t.getTitle(), t.getDescription(), t.getPriority(), author);
     }
 
 }
