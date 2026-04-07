@@ -1,7 +1,9 @@
 package io.astrodesk.ticket;
 
 import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,46 +12,53 @@ import java.util.List;
 @Transactional
 public class TicketService {
 
-    private final TicketRepository repository;
+    private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
 
-    public TicketService(TicketRepository repository) {
-        this.repository = repository;
+    public TicketService(TicketRepository ticketRepository, UserRepository userRepository) {
+        this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
     }
 
     public TicketEntity saveTicket(String title, String description, TicketPriority priority, DbUserEntity author) {
         TicketEntity ticketEntity = new TicketEntity(title, description, priority, author);
-        repository.save(ticketEntity);
+        ticketRepository.save(ticketEntity);
         return ticketEntity;
     }
 
-    public void acceptTicket(int ticketId) {
+    public TicketEntity acceptTicket(long ticketId) {
         TicketEntity ticket = getTicket(ticketId);
         ticket.accept();
-        repository.save(ticket);
+        ticketRepository.save(ticket);
+        return ticket;
     }
 
-    public void startTicket(int ticketId) {
+    public TicketEntity startTicket(long ticketId) {
         TicketEntity ticket = getTicket(ticketId);
         ticket.startProgress();
-        repository.save(ticket);
+        ticketRepository.save(ticket);
+        return ticket;
     }
 
-    public void resolveTicket(int ticketId) {
+    public TicketEntity resolveTicket(long ticketId) {
         TicketEntity ticket = getTicket(ticketId);
         ticket.resolve();
-        repository.save(ticket);
+        ticketRepository.save(ticket);
+        return ticket;
     }
 
-    public void closeTicket(int ticketId) {
+    public TicketEntity closeTicket(long ticketId) {
         TicketEntity ticket = getTicket(ticketId);
         ticket.close();
-        repository.save(ticket);
+        ticketRepository.save(ticket);
+        return ticket;
     }
 
-    public void cancelTicket(int ticketId) {
+    public TicketEntity cancelTicket(long ticketId) {
         TicketEntity ticket = getTicket(ticketId);
         ticket.cancel();
-        repository.save(ticket);
+        ticketRepository.save(ticket);
+        return ticket;
     }
 /*
     public TicketEntity createSampleTicket_1() {
@@ -66,10 +75,39 @@ public class TicketService {
 */
 
     public List<TicketEntity> showTickets() {
-        return repository.findAll();
+        return ticketRepository.findAll();
     }
 
     public TicketEntity getTicket(long id) {
-        return repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Ticket not found!"));
+        return ticketRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+    }
+
+    public void deleteTicket(long id) {
+        if(!ticketRepository.existsById(id)) {
+            throw new IllegalArgumentException("Ticket does not exist");
+        }
+        ticketRepository.deleteById(id);
+    }
+
+    public TicketEntity createTicket(TicketEntity ticket, Authentication authentication) {
+        String username = authentication.getName();
+        DbUserEntity author = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return saveTicket(ticket.getTitle(), ticket.getDescription(), ticket.getPriority(), author);
+
+    }
+
+    public TicketEntity updateTicketAttributes(long id, String title, String description, TicketPriority priority) {
+        TicketEntity ticket = getTicket(id);
+        if(title != null) {
+            ticket.setTitle(title);
+        }
+        if(description != null) {
+            ticket.setDescription(description);
+        }
+        if(priority != null) {
+            ticket.setPriority(priority);
+        }
+        return ticketRepository.save(ticket);
     }
 }

@@ -120,4 +120,15 @@ public class TicketEntity {
         return author.getUserId();
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setPriority(TicketPriority priority) {
+        this.priority = priority;
+    }
 }
