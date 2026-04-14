@@ -1,7 +1,10 @@
 package io.astrodesk.ticket;
 
+import io.astrodesk.inventory.Inventory;
+import io.astrodesk.inventory.InventoryRepository;
 import io.astrodesk.user.DbUserEntity;
 import io.astrodesk.user.UserRepository;
+import io.astrodesk.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -14,14 +17,18 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
+    private final InventoryRepository inventoryRepository;
 
-    public TicketService(TicketRepository ticketRepository, UserRepository userRepository) {
+    public TicketService(TicketRepository ticketRepository, UserRepository userRepository, UserService userService, InventoryRepository inventoryRepository) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+        this.userService = userService;
+        this.inventoryRepository = inventoryRepository;
     }
 
-    public TicketEntity saveTicket(String title, String description, TicketPriority priority, DbUserEntity author) {
-        TicketEntity ticketEntity = new TicketEntity(title, description, priority, author);
+    public TicketEntity saveTicket(String title, String description, TicketPriority priority, DbUserEntity author, DbUserEntity assignedTo, Inventory asset) {
+        TicketEntity ticketEntity = new TicketEntity(title, description, priority, author, assignedTo, asset);
         ticketRepository.save(ticketEntity);
         return ticketEntity;
     }
@@ -89,15 +96,22 @@ public class TicketService {
         ticketRepository.deleteById(id);
     }
 
-    public TicketEntity createTicket(TicketEntity ticket, Authentication authentication) {
+    public TicketEntity createTicket(TicketEntity ticket, Authentication authentication, Long linkedInventoryId) {
         String username = authentication.getName();
         DbUserEntity author = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return saveTicket(ticket.getTitle(), ticket.getDescription(), ticket.getPriority(), author);
+        Inventory asset = null;
+        if(linkedInventoryId != null) {
+            asset = inventoryRepository.findById(linkedInventoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
+
+        }
+
+        return saveTicket(ticket.getTitle(), ticket.getDescription(), ticket.getPriority(), author, null, asset);
 
     }
 
-    public TicketEntity updateTicketAttributes(long id, String title, String description, TicketPriority priority) {
+    public TicketEntity updateTicketAttributes(long id, String title, String description, TicketPriority priority, Long assetId) {
         TicketEntity ticket = getTicket(id);
         if(title != null) {
             ticket.setTitle(title);
@@ -108,6 +122,31 @@ public class TicketService {
         if(priority != null) {
             ticket.setPriority(priority);
         }
+        if(assetId != null) {
+            Inventory asset = inventoryRepository.findById(assetId)
+                            .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
+            ticket.setLinkedInventoryId(asset);
+        }
         return ticketRepository.save(ticket);
     }
+
+
+    public TicketEntity addAssignee(long ticketId, long userId) {
+        TicketEntity ticket = getTicket(ticketId);
+        List<DbUserEntity> admins = userService.showTicketAdmins();
+        DbUserEntity assignee = null;
+        for(DbUserEntity user : admins) {
+            if(userId == user.getUserId()) {
+                assignee = user;
+                ticket.setAssignedTo(assignee);
+                break;
+            }
+            if(assignee == null) {
+                throw new IllegalArgumentException("User unauthorized");
+            }
+        }
+
+        return ticketRepository.save(ticket);
+    }
+
 }

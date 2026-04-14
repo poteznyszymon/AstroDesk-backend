@@ -1,5 +1,7 @@
 package io.astrodesk.ticket;
 
+import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -31,8 +33,13 @@ public class TicketController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<TicketEntity> addTicket(@RequestBody TicketEntity t, Authentication authentication) {
-        TicketEntity savedTicket = ticketService.createTicket(t, authentication);
+    public ResponseEntity<TicketEntity> addTicket(@RequestBody TicketRequest request, Authentication authentication) {
+        TicketEntity ticket = new TicketEntity();
+        ticket.setTitle(request.getTitle());
+        ticket.setDescription(request.getDescription());
+        ticket.setPriority(request.getPriority());
+
+        TicketEntity savedTicket = ticketService.createTicket(ticket, authentication, request.getLinkedInventoryId());
         return ResponseEntity.ok(savedTicket);
     }
 
@@ -45,7 +52,7 @@ public class TicketController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<TicketEntity> updateTicket(@PathVariable long id, @RequestBody TicketEntity update) {
-        TicketEntity updated = ticketService.updateTicketAttributes(id, update.getTitle(), update.getDescription(), update.getPriority());
+        TicketEntity updated = ticketService.updateTicketAttributes(id, update.getTitle(), update.getDescription(), update.getPriority(), update.getLinkedInventoryId());
         return ResponseEntity.ok(updated);
     }
 
@@ -77,5 +84,11 @@ public class TicketController {
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
     public ResponseEntity<TicketEntity> cancelTicketStatus(@PathVariable long id) {
         return ResponseEntity.ok(ticketService.cancelTicket(id));
+    }
+
+    @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
+    public ResponseEntity<TicketEntity> assignToTicket(@PathVariable long id, @RequestBody DbUserEntity assignee) {
+        return ResponseEntity.ok(ticketService.addAssignee(id, assignee.getUserId()));
     }
 }

@@ -13,6 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
     private final AuthenticationManager authenticationManager;
@@ -62,4 +64,9 @@ public class UserService {
         cookie.setMaxAge(0);
         response.addCookie(cookie);
     }
+
+    public List<DbUserEntity> showTicketAdmins() {
+        return userRepository.findByRoleIn(List.of(UserRole.TICKET_ADMIN, UserRole.HEADADMIN));
+    }
+
 }

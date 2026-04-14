@@ -28,7 +28,11 @@ public class DbUserEntity {
     private UserRole role;
 
     @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
-    private List<TicketEntity> tickets;
+    private List<TicketEntity> userTickets;
+
+    @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
+    private List<TicketEntity> assigneeTickets;
+
 
     public DbUserEntity() {}
 

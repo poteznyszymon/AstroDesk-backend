@@ -1,6 +1,8 @@
 package io.astrodesk.ticket;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.astrodesk.inventory.Inventory;
 import io.astrodesk.user.DbUserEntity;
 import jakarta.persistence.*;
 
@@ -8,10 +10,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Tickets")
-@JsonPropertyOrder({"ticketId","title","description","status","priority","author","date"})
+@JsonPropertyOrder({"ticketId","title","description","status","priority","author","date","assignedTo","linkedInventoryId"})
 public class TicketEntity {
 
     @Id
@@ -33,23 +36,46 @@ public class TicketEntity {
     @Enumerated(EnumType.STRING)
     private TicketPriority priority;
 
-    private LocalDate date;
+    @NotNull
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    private LocalDateTime createdAt;
+
+    @NotNull
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    private LocalDateTime updatedAt;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private DbUserEntity author;
 
-    public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, DbUserEntity newAuthor) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignee_id", referencedColumnName = "userId")
+    private DbUserEntity assignedTo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asset_id", referencedColumnName = "id")
+    private Inventory linkedInventoryId;
+
+    public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, DbUserEntity newAuthor,
+                        DbUserEntity assignedTo, Inventory linkedInventoryId) {
         this.title = newTitle;
         this.description = newDescription;
         this.status = TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE;
         this.priority = newPriority;
-        this.date = LocalDate.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         this.author = newAuthor;
+        this.assignedTo = assignedTo;
+        this.linkedInventoryId = linkedInventoryId;
     }
 
     protected TicketEntity() {}
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
     public void accept() {
         if(status != TicketStatus.OCZEKIWANIE_NA_AKCEPTACJE) {
@@ -112,12 +138,12 @@ public class TicketEntity {
         return priority;
     }
 
-    public LocalDate getDate() {
-        return date;
-    }
-
     public Long getAuthor() {
         return author.getUserId();
+    }
+
+    public Long getLinkedInventoryId() {
+        return linkedInventoryId != null ? linkedInventoryId.getId() : null;
     }
 
     public void setTitle(String title) {
@@ -131,4 +157,13 @@ public class TicketEntity {
     public void setPriority(TicketPriority priority) {
         this.priority = priority;
     }
+
+    public void setAssignedTo(DbUserEntity assignedTo) {
+        this.assignedTo = assignedTo;
+    }
+
+    public void setLinkedInventoryId(Inventory linkedInventoryId) {
+        this.linkedInventoryId = linkedInventoryId;
+    }
+
 }
