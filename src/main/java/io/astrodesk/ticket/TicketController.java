@@ -45,50 +45,50 @@ public class TicketController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<Void> deleteTicket(@PathVariable long id) {
-        ticketService.deleteTicket(id);
+    public ResponseEntity<Void> deleteTicket(@PathVariable long id, Authentication authentication) {
+        ticketService.deleteTicket(id, authentication);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<TicketEntity> updateTicket(@PathVariable long id, @RequestBody TicketEntity update) {
-        TicketEntity updated = ticketService.updateTicketAttributes(id, update.getTitle(), update.getDescription(), update.getPriority(), update.getLinkedInventoryId());
+    public ResponseEntity<TicketEntity> updateTicket(@PathVariable long id, @RequestBody TicketEntity update, Authentication authentication) {
+        TicketEntity updated = ticketService.updateTicketAttributes(id, update.getTitle(), update.getDescription(), update.getPriority(), update.getLinkedInventoryId(), authentication);
         return ResponseEntity.ok(updated);
     }
 
     @PatchMapping("/{id}/accept")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> acceptTicket(@PathVariable long id) {
-        return ResponseEntity.ok(ticketService.acceptTicket(id));
+    public ResponseEntity<TicketEntity> acceptTicket(@PathVariable long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.acceptTicket(id, authentication));
     }
 
     @PatchMapping("/{id}/open")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> openTicketStatus(@PathVariable long id) {
-        return ResponseEntity.ok(ticketService.startTicket(id));
+    public ResponseEntity<TicketEntity> openTicketStatus(@PathVariable long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.startTicket(id, authentication));
     }
 
     @PatchMapping("/{id}/resolve")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> resolveTicketStatus(@PathVariable long id) {
-        return ResponseEntity.ok(ticketService.resolveTicket(id));
+    public ResponseEntity<TicketEntity> resolveTicketStatus(@PathVariable long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.resolveTicket(id, authentication));
     }
 
     @PatchMapping("/{id}/close")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> closeTicketStatus(@PathVariable long id) {
-        return ResponseEntity.ok(ticketService.closeTicket(id));
+    public ResponseEntity<TicketEntity> closeTicketStatus(@PathVariable long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.closeTicket(id, authentication));
     }
 
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> cancelTicketStatus(@PathVariable long id) {
-        return ResponseEntity.ok(ticketService.cancelTicket(id));
+    public ResponseEntity<TicketEntity> cancelTicketStatus(@PathVariable long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.cancelTicket(id, authentication));
     }
 
     @PatchMapping("/{id}/assign")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
-    public ResponseEntity<TicketEntity> assignToTicket(@PathVariable long id, @RequestBody DbUserEntity assignee) {
-        return ResponseEntity.ok(ticketService.addAssignee(id, assignee.getUserId()));
+    public ResponseEntity<TicketEntity> assignToTicket(@PathVariable long id, @RequestBody DbUserEntity assignee, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.addAssignee(id, assignee.getUserId(), authentication));
     }
 }

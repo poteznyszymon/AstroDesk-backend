@@ -1,6 +1,7 @@
 package io.astrodesk.ticket;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.astrodesk.inventory.Inventory;
 import io.astrodesk.user.DbUserEntity;
@@ -37,11 +38,11 @@ public class TicketEntity {
     private TicketPriority priority;
 
     @NotNull
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    @JsonFormat(pattern = "dd.MM.yyyy, HH:mm")
     private LocalDateTime createdAt;
 
     @NotNull
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    @JsonFormat(pattern = "dd.MM.yyyy, HH:mm")
     private LocalDateTime updatedAt;
 
     @NotNull
@@ -144,6 +145,11 @@ public class TicketEntity {
 
     public Long getLinkedInventoryId() {
         return linkedInventoryId != null ? linkedInventoryId.getId() : null;
+    }
+
+    @JsonIgnore
+    public DbUserEntity getAssignedTo() {
+        return assignedTo;
     }
 
     public void setTitle(String title) {
