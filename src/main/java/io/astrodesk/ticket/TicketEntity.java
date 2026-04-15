@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.astrodesk.inventory.Inventory;
 import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserDTO;
 import jakarta.persistence.*;
 
 import jakarta.validation.constraints.NotBlank;
@@ -139,8 +140,15 @@ public class TicketEntity {
         return priority;
     }
 
-    public Long getAuthor() {
-        return author.getUserId();
+    public UserDTO getAuthor() {
+        UserDTO dto = new UserDTO();
+        dto.setUserId(author.getUserId());
+        dto.setUsername(author.getUsername());
+        dto.setFirstName(author.getFirstName());
+        dto.setLastName(author.getLastName());
+        dto.setEmail(author.getEmail());
+        dto.setRole(author.getRole());
+        return dto;
     }
 
     public Long getLinkedInventoryId() {
@@ -150,6 +158,18 @@ public class TicketEntity {
     @JsonIgnore
     public DbUserEntity getAssignedTo() {
         return assignedTo;
+    }
+
+    public UserDTO getAssignee() {
+        if (assignedTo == null) return null;
+        UserDTO dto = new UserDTO();
+        dto.setUserId(assignedTo.getUserId());
+        dto.setUsername(assignedTo.getUsername());
+        dto.setFirstName(assignedTo.getFirstName());
+        dto.setLastName(assignedTo.getLastName());
+        dto.setEmail(assignedTo.getEmail());
+        dto.setRole(assignedTo.getRole());
+        return dto;
     }
 
     public void setTitle(String title) {

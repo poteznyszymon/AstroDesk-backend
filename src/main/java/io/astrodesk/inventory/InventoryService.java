@@ -319,6 +319,18 @@ public class InventoryService {
             inventory.setPriority(updatedInventory.getPriority());
         }
 
+        if (updatedInventory.getStatus() != null) {
+            historyService.saveFieldChange(
+                    HistoryTargetType.INVENTORY,
+                    inventory.getId(),
+                    "status",
+                    inventory.getStatus() != null ? inventory.getStatus().name() : null,
+                    updatedInventory.getStatus().name(),
+                    changedBy
+            );
+            inventory.setStatus(updatedInventory.getStatus());
+        }
+
         if (updatedInventory.getAuthor() != null && !Objects.equals(inventory.getAuthor(), updatedInventory.getAuthor())) {
             historyService.saveFieldChange(
                     HistoryTargetType.INVENTORY,

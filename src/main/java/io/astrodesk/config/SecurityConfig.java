@@ -1,5 +1,6 @@
 package io.astrodesk.config;
 
+import io.astrodesk.user.LdapUserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,11 @@ import org.springframework.security.web.context.DelegatingSecurityContextReposit
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 
 @Configuration
@@ -39,10 +45,13 @@ public class SecurityConfig {
     private String ldapPwd;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager ldapAuthManager) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   AuthenticationManager ldapAuthManager,
+                                                   LdapUserService ldapUserService) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/", "/login", "/logout").permitAll()
+                            .requestMatchers("/", "/login", "/logout", "/error").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -50,6 +59,8 @@ public class SecurityConfig {
                         .logoutUrl("/logout")
                         .disable())
                 .csrf(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .authenticationManager(ldapAuthManager);
         return http.build();
     }
@@ -79,6 +90,7 @@ public class SecurityConfig {
         LdapBindAuthenticationManagerFactory factory = new LdapBindAuthenticationManagerFactory(ldapContextSource);
         factory.setUserDnPatterns("uid={0},ou=users");
         factory.setLdapAuthoritiesPopulator(ldapAuthoritiesPopulator);
+
         return factory.createAuthenticationManager();
     }
 
@@ -88,9 +100,23 @@ public class SecurityConfig {
         populator.setGroupRoleAttribute("cn");
         populator.setSearchSubtree(true);
         return populator;
+
     }
 
     // Used for syncing users into db
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public LdapTemplate ldapTemplate(LdapContextSource ldapContextSource) {
         return new LdapTemplate(ldapContextSource);

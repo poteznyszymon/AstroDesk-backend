@@ -134,8 +134,8 @@ public class Inventory {
     }
 
     public void assign(String assignedTo, String assignedBy) {
-        if (status != InventoryStatus.DOSTEPNE) {
-            throw new IllegalStateException("Inventory item must be DOSTEPNE to assign");
+        if (status != InventoryStatus.DOSTEPNE && status != InventoryStatus.DO_WYDANIA) {
+            throw new IllegalStateException("Inventory item must be DOSTEPNE or DO_WYDANIA to assign");
         }
         this.assignedTo = assignedTo;
         this.assignedBy = assignedBy;
@@ -271,6 +271,10 @@ public class Inventory {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public void setStatus(InventoryStatus status) {
+        this.status = status;
     }
 
 }
