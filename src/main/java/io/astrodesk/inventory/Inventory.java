@@ -1,14 +1,18 @@
 package io.astrodesk.inventory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserDTO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.persistence.OneToMany;
-import java.util.ArrayList;
-import java.util.List;
+
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "inventory")
@@ -37,16 +41,11 @@ public class Inventory {
     @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InventoryNotes> notes = new ArrayList<>();
 
-    public List<InventoryNotes> getNotes() {
-        return notes;
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
     private Long id;
 
-    // podstawowe informacje
     @NotBlank
     @Column(nullable = false, length = 100)
     private String name;
@@ -55,38 +54,39 @@ public class Inventory {
     @Enumerated(EnumType.STRING)
     private InventoryItemType itemType;
 
-    // dane sprzętu
     @NotBlank
     @Column(nullable = false, unique = true)
     private String serialNumber;
 
     private String model;
 
-    // zakup
     private LocalDate boughtDate;
     private Double price;
     private String invoiceNumber;
 
-    // lokalizacja i przypisanie
     private String location;
-    private String assignedTo;
-    private String assignedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_id", referencedColumnName = "userId")
+    private DbUserEntity assignedTo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by_id", referencedColumnName = "userId")
+    private DbUserEntity assignedBy;
+
     private LocalDate assignedDate;
 
-    // status
     @Enumerated(EnumType.STRING)
     private InventoryStatus status;
 
     @Enumerated(EnumType.STRING)
     private InventoryPriority priority;
 
-    // administracyjne
-    @NotBlank
-    private String author;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId")
+    private DbUserEntity author;
 
-
-
-    // daty systemowe
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -103,7 +103,7 @@ public class Inventory {
             String invoiceNumber,
             String location,
             InventoryPriority priority,
-            String author
+            DbUserEntity author
     ) {
         this.name = name;
         this.itemType = itemType;
@@ -133,7 +133,7 @@ public class Inventory {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void assign(String assignedTo, String assignedBy) {
+    public void assign(DbUserEntity assignedTo, DbUserEntity assignedBy) {
         if (status != InventoryStatus.DOSTEPNE && status != InventoryStatus.DO_WYDANIA) {
             throw new IllegalStateException("Inventory item must be DOSTEPNE or DO_WYDANIA to assign");
         }
@@ -200,14 +200,6 @@ public class Inventory {
         return location;
     }
 
-    public String getAssignedTo() {
-        return assignedTo;
-    }
-
-    public String getAssignedBy() {
-        return assignedBy;
-    }
-
     public LocalDate getAssignedDate() {
         return assignedDate;
     }
@@ -220,17 +212,76 @@ public class Inventory {
         return priority;
     }
 
-    public String getAuthor() {
-        return author;
-    }
-
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public List<InventoryNotes> getNotes() {
+        return notes;
+    }
+
+    public UserDTO getAuthor() {
+        if (author == null) {
+            return null;
+        }
+
+        UserDTO dto = new UserDTO();
+        dto.setUserId(author.getUserId());
+        dto.setUsername(author.getUsername());
+        dto.setFirstName(author.getFirstName());
+        dto.setLastName(author.getLastName());
+        dto.setEmail(author.getEmail());
+        dto.setRole(author.getRole());
+        return dto;
+    }
+
+    public UserDTO getAssignedTo() {
+        if (assignedTo == null) {
+            return null;
+        }
+
+        UserDTO dto = new UserDTO();
+        dto.setUserId(assignedTo.getUserId());
+        dto.setUsername(assignedTo.getUsername());
+        dto.setFirstName(assignedTo.getFirstName());
+        dto.setLastName(assignedTo.getLastName());
+        dto.setEmail(assignedTo.getEmail());
+        dto.setRole(assignedTo.getRole());
+        return dto;
+    }
+
+    public UserDTO getAssignedBy() {
+        if (assignedBy == null) {
+            return null;
+        }
+
+        UserDTO dto = new UserDTO();
+        dto.setUserId(assignedBy.getUserId());
+        dto.setUsername(assignedBy.getUsername());
+        dto.setFirstName(assignedBy.getFirstName());
+        dto.setLastName(assignedBy.getLastName());
+        dto.setEmail(assignedBy.getEmail());
+        dto.setRole(assignedBy.getRole());
+        return dto;
+    }
+
+    @JsonIgnore
+    public DbUserEntity getAuthorEntity() {
+        return author;
+    }
+
+    @JsonIgnore
+    public DbUserEntity getAssignedToEntity() {
+        return assignedTo;
+    }
+
+    @JsonIgnore
+    public DbUserEntity getAssignedByEntity() {
+        return assignedBy;
     }
 
     public void setName(String name) {
@@ -269,12 +320,19 @@ public class Inventory {
         this.priority = priority;
     }
 
-    public void setAuthor(String author) {
+    public void setAuthor(DbUserEntity author) {
         this.author = author;
+    }
+
+    public void setAssignedTo(DbUserEntity assignedTo) {
+        this.assignedTo = assignedTo;
+    }
+
+    public void setAssignedBy(DbUserEntity assignedBy) {
+        this.assignedBy = assignedBy;
     }
 
     public void setStatus(InventoryStatus status) {
         this.status = status;
     }
-
 }

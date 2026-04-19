@@ -1,6 +1,8 @@
 package io.astrodesk.inventory;
 
 import io.astrodesk.history.HistoryService;
+import io.astrodesk.history.HistoryTargetType;
+import io.astrodesk.user.DbUserEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,6 +47,8 @@ public class InventoryNotesService {
 
         InventoryNotes note = new InventoryNotes(content, author, inventory);
         return inventoryNotesRepository.save(note);
+
+
     }
 
     public InventoryNotes updateNote(Long inventoryId, Long noteId, String content) {
@@ -55,10 +59,12 @@ public class InventoryNotesService {
                 ));
 
         note.setContent(content);
+
         return inventoryNotesRepository.save(note);
+
     }
 
-    public void deleteNote(Long inventoryId, Long noteId) {
+    public void deleteNote(Long inventoryId, Long noteId ) {
         InventoryNotes note = inventoryNotesRepository.findByIdAndInventoryId(noteId, inventoryId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -66,5 +72,7 @@ public class InventoryNotesService {
                 ));
 
         inventoryNotesRepository.delete(note);
+
+
     }
 }

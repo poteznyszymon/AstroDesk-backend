@@ -1,5 +1,8 @@
 package io.astrodesk.inventory;
 
+import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -9,9 +12,14 @@ import java.util.List;
 public class InventoryController {
 
     private final InventoryService inventoryService;
+    private final UserRepository userRepository;
 
-    public InventoryController(InventoryService inventoryService) {
+    public InventoryController(
+            InventoryService inventoryService,
+            UserRepository userRepository
+    ) {
         this.inventoryService = inventoryService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -20,10 +28,10 @@ public class InventoryController {
     }
 
     @GetMapping("/{id}")
-    public Inventory getInventory(@PathVariable long id)
-    {
+    public Inventory getInventory(@PathVariable long id) {
         return inventoryService.getInventory(id);
     }
+
     @PatchMapping("/{id}")
     public Inventory updateInventoryPartial(
             @PathVariable long id,
@@ -31,6 +39,7 @@ public class InventoryController {
     ) {
         return inventoryService.updateInventoryPartial(id, updated);
     }
+
     @DeleteMapping("/{id}")
     public void deleteInventory(
             @PathVariable Long id,
@@ -40,7 +49,13 @@ public class InventoryController {
     }
 
     @PostMapping
-    public Inventory createInventory(@RequestBody Inventory inventory) {
+    public Inventory createInventory(
+            @RequestBody Inventory inventory,
+            Authentication authentication
+    ) {
+        DbUserEntity author = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         return inventoryService.saveInventory(
                 inventory.getName(),
                 inventory.getItemType(),
@@ -51,7 +66,7 @@ public class InventoryController {
                 inventory.getInvoiceNumber(),
                 inventory.getLocation(),
                 inventory.getPriority(),
-                inventory.getAuthor()
+                author
         );
     }
 

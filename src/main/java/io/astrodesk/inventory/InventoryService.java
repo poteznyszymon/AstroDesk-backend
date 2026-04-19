@@ -2,6 +2,8 @@ package io.astrodesk.inventory;
 
 import io.astrodesk.history.HistoryService;
 import io.astrodesk.history.HistoryTargetType;
+import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,13 +17,16 @@ public class InventoryService {
 
     private final InventoryRepository repository;
     private final HistoryService historyService;
+    private final UserRepository userRepository;
 
     public InventoryService(
             InventoryRepository repository,
-            HistoryService historyService
+            HistoryService historyService,
+            UserRepository userRepository
     ) {
         this.repository = repository;
         this.historyService = historyService;
+        this.userRepository = userRepository;
     }
 
     public Inventory saveInventory(
@@ -34,7 +39,7 @@ public class InventoryService {
             String invoiceNumber,
             String location,
             InventoryPriority priority,
-            String author
+            DbUserEntity author
     ) {
         Inventory inventory = new Inventory(
                 name,
@@ -55,7 +60,7 @@ public class InventoryService {
                 HistoryTargetType.INVENTORY,
                 savedInventory.getId(),
                 "Utworzono urządzenie",
-                author
+                author.getUsername()
         );
 
         return savedInventory;
@@ -76,10 +81,27 @@ public class InventoryService {
     public Inventory assignInventory(long id, String assignedTo, String assignedBy) {
         Inventory inventory = getInventory(id);
 
-        String oldAssignedTo = inventory.getAssignedTo();
-        String oldStatus = inventory.getStatus() != null ? inventory.getStatus().name() : null;
+        DbUserEntity assignedToEntity = userRepository.findByUsername(assignedTo)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Assigned user not found: " + assignedTo
+                ));
 
-        inventory.assign(assignedTo, assignedBy);
+        DbUserEntity assignedByEntity = userRepository.findByUsername(assignedBy)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Assigning user not found: " + assignedBy
+                ));
+
+        String oldAssignedTo = inventory.getAssignedToEntity() != null
+                ? inventory.getAssignedToEntity().getUsername()
+                : null;
+
+        String oldStatus = inventory.getStatus() != null
+                ? inventory.getStatus().name()
+                : null;
+
+        inventory.assign(assignedToEntity, assignedByEntity);
         Inventory savedInventory = repository.save(inventory);
 
         historyService.saveFieldChange(
@@ -87,8 +109,10 @@ public class InventoryService {
                 savedInventory.getId(),
                 "assignedTo",
                 oldAssignedTo,
-                savedInventory.getAssignedTo(),
-                assignedBy
+                savedInventory.getAssignedToEntity() != null
+                        ? savedInventory.getAssignedToEntity().getUsername()
+                        : null,
+                assignedByEntity.getUsername()
         );
 
         historyService.saveFieldChange(
@@ -97,14 +121,14 @@ public class InventoryService {
                 "status",
                 oldStatus,
                 savedInventory.getStatus() != null ? savedInventory.getStatus().name() : null,
-                assignedBy
+                assignedByEntity.getUsername()
         );
 
         historyService.saveMessage(
                 HistoryTargetType.INVENTORY,
                 savedInventory.getId(),
-                "Przypisano urządzenie do: " + assignedTo,
-                assignedBy
+                "Przypisano urządzenie do: " + assignedToEntity.getUsername(),
+                assignedByEntity.getUsername()
         );
 
         return savedInventory;
@@ -113,9 +137,19 @@ public class InventoryService {
     public Inventory returnInventory(long id) {
         Inventory inventory = getInventory(id);
 
-        String changedBy = inventory.getAssignedBy() != null ? inventory.getAssignedBy() : inventory.getAuthor();
-        String oldAssignedTo = inventory.getAssignedTo();
-        String oldStatus = inventory.getStatus() != null ? inventory.getStatus().name() : null;
+        String changedBy = inventory.getAssignedByEntity() != null
+                ? inventory.getAssignedByEntity().getUsername()
+                : inventory.getAuthorEntity() != null
+                ? inventory.getAuthorEntity().getUsername()
+                : null;
+
+        String oldAssignedTo = inventory.getAssignedToEntity() != null
+                ? inventory.getAssignedToEntity().getUsername()
+                : null;
+
+        String oldStatus = inventory.getStatus() != null
+                ? inventory.getStatus().name()
+                : null;
 
         inventory.returnToStock();
         Inventory savedInventory = repository.save(inventory);
@@ -125,7 +159,9 @@ public class InventoryService {
                 savedInventory.getId(),
                 "assignedTo",
                 oldAssignedTo,
-                savedInventory.getAssignedTo(),
+                savedInventory.getAssignedToEntity() != null
+                        ? savedInventory.getAssignedToEntity().getUsername()
+                        : null,
                 changedBy
         );
 
@@ -151,8 +187,13 @@ public class InventoryService {
     public Inventory sendToService(long id) {
         Inventory inventory = getInventory(id);
 
-        String changedBy = inventory.getAuthor();
-        String oldStatus = inventory.getStatus() != null ? inventory.getStatus().name() : null;
+        String changedBy = inventory.getAuthorEntity() != null
+                ? inventory.getAuthorEntity().getUsername()
+                : null;
+
+        String oldStatus = inventory.getStatus() != null
+                ? inventory.getStatus().name()
+                : null;
 
         inventory.sendToService();
         Inventory savedInventory = repository.save(inventory);
@@ -179,8 +220,13 @@ public class InventoryService {
     public Inventory disposeInventory(long id) {
         Inventory inventory = getInventory(id);
 
-        String changedBy = inventory.getAuthor();
-        String oldStatus = inventory.getStatus() != null ? inventory.getStatus().name() : null;
+        String changedBy = inventory.getAuthorEntity() != null
+                ? inventory.getAuthorEntity().getUsername()
+                : null;
+
+        String oldStatus = inventory.getStatus() != null
+                ? inventory.getStatus().name()
+                : null;
 
         inventory.markAsDisposed();
         Inventory savedInventory = repository.save(inventory);
@@ -207,9 +253,11 @@ public class InventoryService {
     public Inventory updateInventoryPartial(long id, Inventory updatedInventory) {
         Inventory inventory = getInventory(id);
 
-        String changedBy = updatedInventory.getAuthor() != null
-                ? updatedInventory.getAuthor()
-                : inventory.getAuthor();
+        String changedBy = updatedInventory.getAuthorEntity() != null
+                ? updatedInventory.getAuthorEntity().getUsername()
+                : inventory.getAuthorEntity() != null
+                ? inventory.getAuthorEntity().getUsername()
+                : null;
 
         if (updatedInventory.getName() != null) {
             historyService.saveFieldChange(
@@ -331,16 +379,43 @@ public class InventoryService {
             inventory.setStatus(updatedInventory.getStatus());
         }
 
-        if (updatedInventory.getAuthor() != null && !Objects.equals(inventory.getAuthor(), updatedInventory.getAuthor())) {
+        if (updatedInventory.getAuthorEntity() != null
+                && !Objects.equals(inventory.getAuthorEntity(), updatedInventory.getAuthorEntity())) {
             historyService.saveFieldChange(
                     HistoryTargetType.INVENTORY,
                     inventory.getId(),
                     "author",
-                    inventory.getAuthor(),
-                    updatedInventory.getAuthor(),
+                    inventory.getAuthorEntity() != null ? inventory.getAuthorEntity().getUsername() : null,
+                    updatedInventory.getAuthorEntity().getUsername(),
                     changedBy
             );
-            inventory.setAuthor(updatedInventory.getAuthor());
+            inventory.setAuthor(updatedInventory.getAuthorEntity());
+        }
+
+        if (updatedInventory.getAssignedToEntity() != null
+                && !Objects.equals(inventory.getAssignedToEntity(), updatedInventory.getAssignedToEntity())) {
+            historyService.saveFieldChange(
+                    HistoryTargetType.INVENTORY,
+                    inventory.getId(),
+                    "assignedTo",
+                    inventory.getAssignedToEntity() != null ? inventory.getAssignedToEntity().getUsername() : null,
+                    updatedInventory.getAssignedToEntity().getUsername(),
+                    changedBy
+            );
+            inventory.setAssignedTo(updatedInventory.getAssignedToEntity());
+        }
+
+        if (updatedInventory.getAssignedByEntity() != null
+                && !Objects.equals(inventory.getAssignedByEntity(), updatedInventory.getAssignedByEntity())) {
+            historyService.saveFieldChange(
+                    HistoryTargetType.INVENTORY,
+                    inventory.getId(),
+                    "assignedBy",
+                    inventory.getAssignedByEntity() != null ? inventory.getAssignedByEntity().getUsername() : null,
+                    updatedInventory.getAssignedByEntity().getUsername(),
+                    changedBy
+            );
+            inventory.setAssignedBy(updatedInventory.getAssignedByEntity());
         }
 
         return repository.save(inventory);
