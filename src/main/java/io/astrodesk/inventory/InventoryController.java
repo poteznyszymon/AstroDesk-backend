@@ -43,9 +43,9 @@ public class InventoryController {
     @DeleteMapping("/{id}")
     public void deleteInventory(
             @PathVariable Long id,
-            @RequestParam String deletedBy
+            Authentication authentication
     ) {
-        inventoryService.deleteInventory(id, deletedBy);
+        inventoryService.deleteInventory(id, authentication.getName());
     }
 
     @PostMapping
