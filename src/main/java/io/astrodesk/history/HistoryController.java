@@ -39,7 +39,7 @@ public class HistoryController {
     @GetMapping("/tickets/{id}/history")
     public List<HistoryEntry> getTicketHistory(@PathVariable Long id) {
         // sprawdzenie czy istnieje
-        ticketService.getTicket(id);
+        ticketService.getTicketEntity(id);
 
         return historyService.getHistory(
                 HistoryTargetType.TICKET,

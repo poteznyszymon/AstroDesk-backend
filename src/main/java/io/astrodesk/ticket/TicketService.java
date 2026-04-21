@@ -5,13 +5,17 @@ import io.astrodesk.history.HistoryTargetType;
 import io.astrodesk.inventory.Inventory;
 import io.astrodesk.inventory.InventoryRepository;
 import io.astrodesk.user.DbUserEntity;
+import io.astrodesk.user.UserDTO;
 import io.astrodesk.user.UserRepository;
 import io.astrodesk.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -22,24 +26,26 @@ public class TicketService {
     private final UserService userService;
     private final InventoryRepository inventoryRepository;
     private final HistoryService historyService;
+    private final TicketMapper ticketMapper;
 
     public TicketService(TicketRepository ticketRepository, UserRepository userRepository, UserService userService,
-                         InventoryRepository inventoryRepository, HistoryService historyService) {
+                         InventoryRepository inventoryRepository, HistoryService historyService, TicketMapper ticketMapper) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.inventoryRepository = inventoryRepository;
         this.historyService = historyService;
+        this.ticketMapper = ticketMapper;
     }
 
-    public TicketEntity saveTicket(String title, String description, TicketPriority priority, DbUserEntity author, DbUserEntity assignedTo, Inventory asset) {
+    private TicketEntity saveTicket(String title, String description, TicketPriority priority, DbUserEntity author, DbUserEntity assignedTo, Inventory asset) {
         TicketEntity ticketEntity = new TicketEntity(title, description, priority, author, assignedTo, asset);
         ticketRepository.save(ticketEntity);
         return ticketEntity;
     }
 
-    public TicketEntity acceptTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO acceptTicket(long ticketId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         TicketStatus oldStatus = ticket.getStatus();
         ticket.accept();
         ticketRepository.save(ticket);
@@ -52,11 +58,11 @@ public class TicketService {
                 ticket.getStatus(),
                 authentication.getName()
         );
-        return ticket;
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity startTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO startTicket(long ticketId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         TicketStatus oldStatus = ticket.getStatus();
         ticket.startProgress();
         ticketRepository.save(ticket);
@@ -69,11 +75,11 @@ public class TicketService {
                 ticket.getStatus(),
                 authentication.getName()
         );
-        return ticket;
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity resolveTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO resolveTicket(long ticketId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         TicketStatus oldStatus = ticket.getStatus();
         ticket.resolve();
         ticketRepository.save(ticket);
@@ -86,11 +92,11 @@ public class TicketService {
                 ticket.getStatus(),
                 authentication.getName()
         );
-        return ticket;
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity closeTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO closeTicket(long ticketId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         TicketStatus oldStatus = ticket.getStatus();
         ticket.close();
         ticketRepository.save(ticket);
@@ -103,11 +109,11 @@ public class TicketService {
                 ticket.getStatus(),
                 authentication.getName()
         );
-        return ticket;
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity cancelTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO cancelTicket(long ticketId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         TicketStatus oldStatus = ticket.getStatus();
         ticket.cancel();
         ticketRepository.save(ticket);
@@ -120,35 +126,67 @@ public class TicketService {
                 ticket.getStatus(),
                 authentication.getName()
         );
-        return ticket;
-    }
-/*
-    public TicketEntity createSampleTicket_1() {
-        return saveTicket("Broken Computer", "dawdwwada", TicketPriority.MEDIUM, "Jake Kowalski");
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity createSampleTicket_2() {
-        return saveTicket("Network problem", "jdwkjwada", TicketPriority.HIGH, "Amanda Nowak");
+    public List<TicketDTO> showTickets(Authentication authentication) {
+        String username = authentication.getName();
+        DbUserEntity currentUser = userService.findByUsername(username);
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TICKET_ADMIN") ||
+                        a.getAuthority().equals("ROLE_HEADADMIN"));
+        if (isAdmin) {
+            return ticketRepository.findAll().stream()
+                    .map(ticketMapper::toDTO)
+                    .collect(Collectors.toList());
+        }
+
+        List<TicketEntity> authoredTickets = ticketRepository.findByAuthor(currentUser);
+        List<TicketEntity> assignedTickets = ticketRepository.findByAssignedTo(currentUser);
+
+        Set<TicketEntity> allTickets = new LinkedHashSet<>();
+        allTickets.addAll(authoredTickets);
+        allTickets.addAll(assignedTickets);
+
+        return allTickets.stream()
+                .map(ticketMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
-    public TicketEntity createSampleTicket_3() {
-        return saveTicket("Bad Environment", "fjwafjoaa", TicketPriority.LOW, "Micheal Krasinski");
-    }
-*/
 
-    public List<TicketEntity> showTickets() {
-        return ticketRepository.findAll();
+    public TicketDTO getTicket(long id, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(id);
+
+        String username = authentication.getName();
+        DbUserEntity currentUser = userService.findByUsername(username);
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TICKET_ADMIN") ||
+                        a.getAuthority().equals("ROLE_HEADADMIN"));
+
+        if(isAdmin) {
+            return ticketMapper.toDTO(ticket);
+        }
+
+        boolean isAuthor = ticket.getAuthor().getUserId().equals(currentUser.getUserId());
+        boolean isAssignee = ticket.getAssignedTo() != null &&
+                ticket.getAssignedTo().getUserId().equals(currentUser.getUserId());
+
+        if (!isAuthor && !isAssignee) {
+            throw new IllegalArgumentException("User unauthorized");
+        }
+
+        return ticketMapper.toDTO(ticket);
     }
 
-    public TicketEntity getTicket(long id) {
+    public TicketEntity getTicketEntity(long id) {
         return ticketRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
     }
 
     public void deleteTicket(long ticketId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
-        if(!ticketRepository.existsById(ticketId)) {
-            throw new IllegalArgumentException("Ticket does not exist");
-        }
+        TicketEntity ticket = getTicketEntity(ticketId);
+
         historyService.saveFieldChange(
                 HistoryTargetType.TICKET,
                 ticketId,
@@ -160,7 +198,7 @@ public class TicketService {
         ticketRepository.deleteById(ticketId);
     }
 
-    public TicketEntity createTicket(TicketEntity ticket, Authentication authentication, Long linkedInventoryId) {
+    public TicketDTO createTicket(TicketEntity ticket, Authentication authentication, Long linkedInventoryId) {
         String username = authentication.getName();
         DbUserEntity author = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -180,12 +218,12 @@ public class TicketService {
                 authentication.getName()
         );
 
-        return saved;
+        return ticketMapper.toDTO(saved);
 
     }
 
-    public TicketEntity updateTicketAttributes(long id, String title, String description, TicketPriority priority, Long assetId, Authentication authentication) {
-        TicketEntity ticket = getTicket(id);
+    public TicketDTO updateTicketAttributes(long id, String title, String description, TicketPriority priority, Long assetId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(id);
 
         if(title != null && !title.equals(ticket.getTitle())) {
             historyService.saveFieldChange(HistoryTargetType.TICKET, id, "Zmiana tytułu", ticket.getTitle(), title, authentication.getName());
@@ -209,12 +247,12 @@ public class TicketService {
                 ticket.setLinkedInventoryId(asset);
             }
         }
-        return ticketRepository.save(ticket);
+        return ticketMapper.toDTO(ticketRepository.save(ticket));
     }
 
 
-    public TicketEntity addAssignee(long ticketId, long userId, Authentication authentication) {
-        TicketEntity ticket = getTicket(ticketId);
+    public TicketDTO addAssignee(long ticketId, long userId, Authentication authentication) {
+        TicketEntity ticket = getTicketEntity(ticketId);
         List<DbUserEntity> admins = userService.showTicketAdmins();
         DbUserEntity assignee = null;
         String oldAssignee = null;
@@ -243,7 +281,7 @@ public class TicketService {
                 authentication.getName()
         );
 
-        return ticketRepository.save(ticket);
+        return ticketMapper.toDTO(ticketRepository.save(ticket));
     }
 
 }

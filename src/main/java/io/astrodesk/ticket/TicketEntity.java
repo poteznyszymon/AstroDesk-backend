@@ -11,8 +11,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "Tickets")
@@ -58,6 +59,9 @@ public class TicketEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "asset_id", referencedColumnName = "id")
     private Inventory linkedInventoryId;
+
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TicketMessageEntity> messages = new ArrayList<>();
 
     public TicketEntity(String newTitle, String newDescription, TicketPriority newPriority, DbUserEntity newAuthor,
                         DbUserEntity assignedTo, Inventory linkedInventoryId) {
@@ -172,6 +176,10 @@ public class TicketEntity {
         return dto;
     }
 
+    public List<TicketMessageEntity> getMessages() {
+        return messages;
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }
@@ -192,4 +200,11 @@ public class TicketEntity {
         this.linkedInventoryId = linkedInventoryId;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 }
