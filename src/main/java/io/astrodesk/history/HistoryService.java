@@ -1,5 +1,6 @@
 package io.astrodesk.history;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,10 @@ public class HistoryService {
 
     public HistoryService(HistoryRepository historyRepository) {
         this.historyRepository = historyRepository;
+    }
+
+    public List<HistoryEntry> getAllHistory() {
+        return historyRepository.findAll(Sort.by(Sort.Direction.DESC, "changedAt"));
     }
 
     public void saveFieldChange(

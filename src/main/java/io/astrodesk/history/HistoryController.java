@@ -2,6 +2,7 @@ package io.astrodesk.history;
 
 import io.astrodesk.inventory.InventoryService;
 import io.astrodesk.ticket.TicketService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,5 +46,11 @@ public class HistoryController {
                 HistoryTargetType.TICKET,
                 id
         );
+    }
+
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('HEADADMIN', 'TICKET_ADMIN', 'ASSET_ADMIN')")
+    public List<HistoryEntry> getAllHistory() {
+        return historyService.getAllHistory();
     }
 }

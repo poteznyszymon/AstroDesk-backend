@@ -124,7 +124,7 @@ public class TicketEntity {
 
      */
 
-    public long getTicketId() {
+    public Long getTicketId() {
         return ticketId;
     }
 

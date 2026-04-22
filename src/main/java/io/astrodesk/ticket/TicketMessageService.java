@@ -48,6 +48,44 @@ public class TicketMessageService {
         return messageMapper.toDTO(saved);
     }
 
+    public void deleteMessage(Long ticketId, Long messageId, Authentication authentication) {
+        TicketMessageEntity message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        if (!message.getTicket().getTicketId().equals(ticketId)) {
+            throw new IllegalArgumentException("Message does not belong to this ticket");
+        }
+
+        DbUserEntity currentUser = userService.findByUsername(authentication.getName());
+        boolean isOwner = message.getSender().getUserId().equals(currentUser.getUserId());
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TICKET_ADMIN") ||
+                        a.getAuthority().equals("ROLE_HEADADMIN"));
+
+        if (!isOwner && !isAdmin) {
+            throw new IllegalArgumentException("User unauthorized");
+        }
+
+        messageRepository.delete(message);
+    }
+
+    public TicketMessageDTO updateMessage(Long ticketId, Long messageId, String content, Authentication authentication) {
+        TicketMessageEntity message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        if (!message.getTicket().getTicketId().equals(ticketId)) {
+            throw new IllegalArgumentException("Message does not belong to this ticket");
+        }
+
+        DbUserEntity currentUser = userService.findByUsername(authentication.getName());
+        if (!message.getSender().getUserId().equals(currentUser.getUserId())) {
+            throw new IllegalArgumentException("User unauthorized");
+        }
+
+        message.setContent(content);
+        return messageMapper.toDTO(messageRepository.save(message));
+    }
+
     public List<TicketMessageDTO> showMessagesForTicket(Long ticketId, Authentication authentication) {
         TicketEntity ticket = ticketService.getTicketEntity(ticketId);
 

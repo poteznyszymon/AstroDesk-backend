@@ -61,6 +61,25 @@ public class TicketController {
         return ResponseEntity.ok(message);
     }
 
+    @DeleteMapping("/{id}/messages/{messageId}")
+    public ResponseEntity<Void> deleteMessage(
+            @PathVariable long id,
+            @PathVariable long messageId,
+            Authentication authentication) {
+        ticketMessageService.deleteMessage(id, messageId, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/messages/{messageId}")
+    public ResponseEntity<TicketMessageDTO> updateMessage(
+            @PathVariable long id,
+            @PathVariable long messageId,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        TicketMessageDTO updated = ticketMessageService.updateMessage(id, messageId, request.get("content"), authentication);
+        return ResponseEntity.ok(updated);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('TICKET_ADMIN', 'HEADADMIN')")
     public ResponseEntity<Void> deleteTicket(@PathVariable long id, Authentication authentication) {
