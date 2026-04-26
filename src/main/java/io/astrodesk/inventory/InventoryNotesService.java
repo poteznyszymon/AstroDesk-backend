@@ -2,8 +2,9 @@ package io.astrodesk.inventory;
 
 import io.astrodesk.history.HistoryService;
 import io.astrodesk.history.HistoryTargetType;
-import io.astrodesk.user.DbUserEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -46,9 +47,16 @@ public class InventoryNotesService {
                 ));
 
         InventoryNotes note = new InventoryNotes(content, author, inventory);
-        return inventoryNotesRepository.save(note);
+        InventoryNotes savedNote = inventoryNotesRepository.save(note);
 
+        historyService.saveMessage(
+                HistoryTargetType.INVENTORY,
+                inventory.getId(),
+                "Dodano notatkę",
+                getCurrentUsername()
+        );
 
+        return savedNote;
     }
 
     public InventoryNotes updateNote(Long inventoryId, Long noteId, String content) {
@@ -71,8 +79,22 @@ public class InventoryNotesService {
                         ErrorMessages.NOTES_NOT_FOUND
                 ));
 
+        historyService.saveMessage(
+                HistoryTargetType.INVENTORY,
+                inventoryId,
+                "Usunięto notatkę: " + note.getContent(),
+                getCurrentUsername()
+        );
+
         inventoryNotesRepository.delete(note);
+    }
 
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
 
+        return authentication.getName();
     }
 }
