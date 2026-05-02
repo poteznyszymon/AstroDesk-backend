@@ -7,10 +7,13 @@ import io.astrodesk.inventory.InventoryRepository;
 import io.astrodesk.user.DbUserEntity;
 import io.astrodesk.user.UserDTO;
 import io.astrodesk.user.UserRepository;
+import io.astrodesk.user.UserRole;
 import io.astrodesk.user.UserService;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -184,6 +187,17 @@ public class TicketService {
         return ticketRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
     }
 
+    private void assertCanLinkAsset(DbUserEntity user, Inventory asset) {
+        UserRole role = user.getRole();
+        if (role == UserRole.ASSET_ADMIN || role == UserRole.HEADADMIN) {
+            return;
+        }
+        DbUserEntity owner = asset.getAssignedToEntity();
+        if (owner == null || !owner.getUserId().equals(user.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Możesz zgłosić problem tylko dla swojego sprzętu");
+        }
+    }
+
     public void deleteTicket(long ticketId, Authentication authentication) {
         TicketEntity ticket = getTicketEntity(ticketId);
 
@@ -206,7 +220,7 @@ public class TicketService {
         if(linkedInventoryId != null) {
             asset = inventoryRepository.findById(linkedInventoryId)
                     .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
-
+            assertCanLinkAsset(author, asset);
         }
         TicketEntity saved = saveTicket(ticket.getTitle(), ticket.getDescription(), ticket.getPriority(), author, null, asset);
         historyService.saveFieldChange(
@@ -240,6 +254,8 @@ public class TicketService {
         if(assetId != null) {
             Inventory asset = inventoryRepository.findById(assetId)
                     .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
+            DbUserEntity currentUser = userService.findByUsername(authentication.getName());
+            assertCanLinkAsset(currentUser, asset);
             if(!asset.equals(ticket.getLinkedInventoryId())) {
                 historyService.saveFieldChange(HistoryTargetType.TICKET, id, "Zmiana urządzenia",
                         ticket.getLinkedInventoryId() != null ? ticket.getLinkedInventoryId().toString() : null,

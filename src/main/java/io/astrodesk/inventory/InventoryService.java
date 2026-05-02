@@ -4,11 +4,14 @@ import io.astrodesk.history.HistoryService;
 import io.astrodesk.history.HistoryTargetType;
 import io.astrodesk.user.DbUserEntity;
 import io.astrodesk.user.UserRepository;
+import io.astrodesk.user.UserRole;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,6 +71,24 @@ public class InventoryService {
 
     public List<Inventory> showInventory() {
         return repository.findAll();
+    }
+
+    public List<AssignableInventoryDTO> getAssignableInventory(Authentication authentication) {
+        DbUserEntity currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        EnumSet<InventoryStatus> excluded = EnumSet.of(InventoryStatus.UTYLIZACJA);
+
+        boolean canSeeAll = currentUser.getRole() == UserRole.ASSET_ADMIN
+                || currentUser.getRole() == UserRole.HEADADMIN;
+
+        List<Inventory> items = canSeeAll
+                ? repository.findByStatusNotIn(excluded)
+                : repository.findByAssignedToAndStatusNotIn(currentUser, excluded);
+
+        return items.stream()
+                .map(AssignableInventoryDTO::from)
+                .toList();
     }
 
     public Inventory getInventory(long id) {

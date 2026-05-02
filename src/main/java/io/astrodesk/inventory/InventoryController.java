@@ -27,6 +27,11 @@ public class InventoryController {
         return inventoryService.showInventory();
     }
 
+    @GetMapping("/assignable")
+    public List<AssignableInventoryDTO> getAssignableInventory(Authentication authentication) {
+        return inventoryService.getAssignableInventory(authentication);
+    }
+
     @GetMapping("/{id}")
     public Inventory getInventory(@PathVariable long id) {
         return inventoryService.getInventory(id);
