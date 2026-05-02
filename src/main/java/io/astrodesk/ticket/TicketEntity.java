@@ -160,6 +160,11 @@ public class TicketEntity {
     }
 
     @JsonIgnore
+    public String getLinkedInventorySerialNumber() {
+        return linkedInventoryId != null ? linkedInventoryId.getSerialNumber() : null;
+    }
+
+    @JsonIgnore
     public DbUserEntity getAssignedTo() {
         return assignedTo;
     }
