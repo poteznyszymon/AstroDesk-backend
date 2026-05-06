@@ -39,9 +39,38 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql
+      - ./backup_restore.sh:/backup_restore.sh
+      - ./backups:/backups
     restart: unless-stopped
+
+  backup:
+    image: alpine:latest
+    container_name: backup
+    depends_on:
+      - postgres
+    volumes:
+      - ./backup.sh:/backup.sh
+      - ./backups:/backups
+    environment:
+      PGPASSWORD: "apppassword"
+      PGHOST: "postgres"
+      PGUSER: "appuser"
+      PGDATABASE: "appdb"
+      TZ: Europe/Warsaw
+    entrypoint: >
+      sh -c "
+      chmod +x /backup.sh &&
+      apk add postgresql-client tzdata &&
+      cp /usr/share/zoneinfo/Europe/Warsaw /etc/localtime &&
+      echo 'Europe/Warsaw' > /etc/timezone && 
+      echo '* * * * * /backup.sh' > /etc/crontabs/root &&
+      echo 'DONE' &&
+      exec crond -f -l 2
+      "
+
 
 volumes:
   ldap_data:
   ldap_config:
   pg_data:
+
