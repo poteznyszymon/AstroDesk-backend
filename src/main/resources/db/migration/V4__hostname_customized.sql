@@ -1,0 +1,1 @@
+ALTER TABLE network_devices ADD COLUMN hostname_customized BOOLEAN NOT NULL DEFAULT FALSE;
