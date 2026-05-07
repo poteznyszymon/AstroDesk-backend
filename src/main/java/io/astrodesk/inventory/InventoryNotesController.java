@@ -1,5 +1,6 @@
 package io.astrodesk.inventory;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,19 +16,23 @@ public class InventoryNotesController {
     }
 
     @GetMapping
-    public List<InventoryNotes> getNotes(@PathVariable Long inventoryId) {
-        return inventoryNotesService.getNotes(inventoryId);
+    public List<InventoryNotes> getNotes(
+            @PathVariable Long inventoryId,
+            Authentication authentication
+    ) {
+        return inventoryNotesService.getNotes(inventoryId, authentication);
     }
 
     @PostMapping
     public InventoryNotes addNote(
             @PathVariable Long inventoryId,
-            @RequestBody InventoryNotes request
+            @RequestBody InventoryNotes request,
+            Authentication authentication
     ) {
         return inventoryNotesService.addNote(
                 inventoryId,
                 request.getContent(),
-                request.getAuthor()
+                authentication
         );
     }
 
@@ -35,20 +40,23 @@ public class InventoryNotesController {
     public InventoryNotes updateNote(
             @PathVariable Long inventoryId,
             @PathVariable Long noteId,
-            @RequestBody InventoryNotes request
+            @RequestBody InventoryNotes request,
+            Authentication authentication
     ) {
         return inventoryNotesService.updateNote(
                 inventoryId,
                 noteId,
-                request.getContent()
+                request.getContent(),
+                authentication
         );
     }
 
     @DeleteMapping("/{noteId}")
     public void deleteNote(
             @PathVariable Long inventoryId,
-            @PathVariable Long noteId
+            @PathVariable Long noteId,
+            Authentication authentication
     ) {
-        inventoryNotesService.deleteNote(inventoryId, noteId);
+        inventoryNotesService.deleteNote(inventoryId, noteId, authentication);
     }
 }

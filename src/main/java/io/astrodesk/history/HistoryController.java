@@ -3,6 +3,7 @@ package io.astrodesk.history;
 import io.astrodesk.inventory.InventoryService;
 import io.astrodesk.ticket.TicketService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,9 +28,11 @@ public class HistoryController {
 
 
     @GetMapping("/inventory/{id}/history")
-    public List<HistoryEntry> getInventoryHistory(@PathVariable Long id) {
-
-        inventoryService.getInventory(id);
+    public List<HistoryEntry> getInventoryHistory(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        inventoryService.getInventory(id, authentication);
 
         return historyService.getHistory(
                 HistoryTargetType.INVENTORY,

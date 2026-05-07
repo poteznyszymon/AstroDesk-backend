@@ -69,8 +69,15 @@ public class InventoryService {
         return savedInventory;
     }
 
-    public List<Inventory> showInventory() {
-        return repository.findAll();
+    public List<Inventory> showInventory(Authentication authentication) {
+        DbUserEntity currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (isAssetAdmin(authentication)) {
+            return repository.findAll();
+        }
+
+        return repository.findByAssignedTo(currentUser);
     }
 
     public List<AssignableInventoryDTO> getAssignableInventory(Authentication authentication) {
@@ -91,7 +98,27 @@ public class InventoryService {
                 .toList();
     }
 
-    public Inventory getInventory(long id) {
+    public Inventory getInventory(long id, Authentication authentication) {
+        Inventory inventory = getInventoryEntity(id);
+
+        DbUserEntity currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (isAssetAdmin(authentication)) {
+            return inventory;
+        }
+
+        boolean isAssignedTo = inventory.getAssignedToEntity() != null
+                && inventory.getAssignedToEntity().getUserId().equals(currentUser.getUserId());
+
+        if (!isAssignedTo) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Brak dostępu do tego urządzenia");
+        }
+
+        return inventory;
+    }
+
+    private Inventory getInventoryEntity(long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -99,8 +126,14 @@ public class InventoryService {
                 ));
     }
 
+    private boolean isAssetAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ASSET_ADMIN")
+                        || authority.getAuthority().equals("ROLE_HEADADMIN"));
+    }
+
     public Inventory assignInventory(long id, String assignedTo, String assignedBy) {
-        Inventory inventory = getInventory(id);
+        Inventory inventory = getInventoryEntity(id);
 
         DbUserEntity assignedToEntity = userRepository.findByUsername(assignedTo)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -155,14 +188,8 @@ public class InventoryService {
         return savedInventory;
     }
 
-    public Inventory returnInventory(long id) {
-        Inventory inventory = getInventory(id);
-
-        String changedBy = inventory.getAssignedByEntity() != null
-                ? inventory.getAssignedByEntity().getUsername()
-                : inventory.getAuthorEntity() != null
-                ? inventory.getAuthorEntity().getUsername()
-                : null;
+    public Inventory returnInventory(long id, String changedBy) {
+        Inventory inventory = getInventoryEntity(id);
 
         String oldAssignedTo = inventory.getAssignedToEntity() != null
                 ? inventory.getAssignedToEntity().getUsername()
@@ -205,12 +232,8 @@ public class InventoryService {
         return savedInventory;
     }
 
-    public Inventory sendToService(long id) {
-        Inventory inventory = getInventory(id);
-
-        String changedBy = inventory.getAuthorEntity() != null
-                ? inventory.getAuthorEntity().getUsername()
-                : null;
+    public Inventory sendToService(long id, String changedBy) {
+        Inventory inventory = getInventoryEntity(id);
 
         String oldStatus = inventory.getStatus() != null
                 ? inventory.getStatus().name()
@@ -238,12 +261,8 @@ public class InventoryService {
         return savedInventory;
     }
 
-    public Inventory disposeInventory(long id) {
-        Inventory inventory = getInventory(id);
-
-        String changedBy = inventory.getAuthorEntity() != null
-                ? inventory.getAuthorEntity().getUsername()
-                : null;
+    public Inventory disposeInventory(long id, String changedBy) {
+        Inventory inventory = getInventoryEntity(id);
 
         String oldStatus = inventory.getStatus() != null
                 ? inventory.getStatus().name()
@@ -271,14 +290,9 @@ public class InventoryService {
         return savedInventory;
     }
 
-    public Inventory updateInventoryPartial(long id, Inventory updatedInventory) {
-        Inventory inventory = getInventory(id);
-
-        String changedBy = updatedInventory.getAuthorEntity() != null
-                ? updatedInventory.getAuthorEntity().getUsername()
-                : inventory.getAuthorEntity() != null
-                ? inventory.getAuthorEntity().getUsername()
-                : null;
+    public Inventory updateInventoryPartial(long id, Inventory updatedInventory, Authentication authentication) {
+        Inventory inventory = getInventoryEntity(id);
+        String changedBy = authentication.getName();
 
         if (updatedInventory.getName() != null) {
             historyService.saveFieldChange(
@@ -443,7 +457,7 @@ public class InventoryService {
     }
 
     public void deleteInventory(long id, String deletedBy) {
-        Inventory inventory = getInventory(id);
+        Inventory inventory = getInventoryEntity(id);
 
         historyService.saveMessage(
                 HistoryTargetType.INVENTORY,

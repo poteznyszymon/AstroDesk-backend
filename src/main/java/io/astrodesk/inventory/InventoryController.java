@@ -2,6 +2,7 @@ package io.astrodesk.inventory;
 
 import io.astrodesk.user.DbUserEntity;
 import io.astrodesk.user.UserRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,8 +24,8 @@ public class InventoryController {
     }
 
     @GetMapping
-    public List<Inventory> getAllInventory() {
-        return inventoryService.showInventory();
+    public List<Inventory> getAllInventory(Authentication authentication) {
+        return inventoryService.showInventory(authentication);
     }
 
     @GetMapping("/assignable")
@@ -33,19 +34,25 @@ public class InventoryController {
     }
 
     @GetMapping("/{id}")
-    public Inventory getInventory(@PathVariable long id) {
-        return inventoryService.getInventory(id);
+    public Inventory getInventory(
+            @PathVariable long id,
+            Authentication authentication
+    ) {
+        return inventoryService.getInventory(id, authentication);
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
     public Inventory updateInventoryPartial(
             @PathVariable long id,
-            @RequestBody Inventory updated
+            @RequestBody Inventory updated,
+            Authentication authentication
     ) {
-        return inventoryService.updateInventoryPartial(id, updated);
+        return inventoryService.updateInventoryPartial(id, updated, authentication);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
     public void deleteInventory(
             @PathVariable Long id,
             Authentication authentication
@@ -54,6 +61,7 @@ public class InventoryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
     public Inventory createInventory(
             @RequestBody Inventory inventory,
             Authentication authentication
@@ -76,26 +84,39 @@ public class InventoryController {
     }
 
     @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
     public Inventory assignInventory(
             @PathVariable long id,
             @RequestParam String assignedTo,
-            @RequestParam String assignedBy
+            Authentication authentication
     ) {
-        return inventoryService.assignInventory(id, assignedTo, assignedBy);
+        return inventoryService.assignInventory(id, assignedTo, authentication.getName());
     }
 
     @PatchMapping("/{id}/return")
-    public Inventory returnInventory(@PathVariable long id) {
-        return inventoryService.returnInventory(id);
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
+    public Inventory returnInventory(
+            @PathVariable long id,
+            Authentication authentication
+    ) {
+        return inventoryService.returnInventory(id, authentication.getName());
     }
 
     @PatchMapping("/{id}/service")
-    public Inventory sendToService(@PathVariable long id) {
-        return inventoryService.sendToService(id);
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
+    public Inventory sendToService(
+            @PathVariable long id,
+            Authentication authentication
+    ) {
+        return inventoryService.sendToService(id, authentication.getName());
     }
 
     @PatchMapping("/{id}/dispose")
-    public Inventory disposeInventory(@PathVariable long id) {
-        return inventoryService.disposeInventory(id);
+    @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")
+    public Inventory disposeInventory(
+            @PathVariable long id,
+            Authentication authentication
+    ) {
+        return inventoryService.disposeInventory(id, authentication.getName());
     }
 }

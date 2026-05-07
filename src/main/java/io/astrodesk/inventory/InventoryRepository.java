@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     List<Inventory> findByStatusNotIn(Collection<InventoryStatus> statuses);
     List<Inventory> findByAssignedToAndStatusNotIn(DbUserEntity assignedTo, Collection<InventoryStatus> statuses);
+    List<Inventory> findByAssignedTo(DbUserEntity assignedTo);
     Optional<Inventory> findBySerialNumber(String serialNumber);
 }

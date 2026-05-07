@@ -7,5 +7,6 @@ public enum InventoryItemType {
     ROUTER,
     SWITCH,
     TELEFON,
+    SFP,
 
 }

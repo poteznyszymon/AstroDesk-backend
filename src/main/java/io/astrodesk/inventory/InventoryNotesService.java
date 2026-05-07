@@ -4,7 +4,6 @@ import io.astrodesk.history.HistoryService;
 import io.astrodesk.history.HistoryTargetType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,35 +15,30 @@ public class InventoryNotesService {
     private final InventoryRepository inventoryRepository;
     private final InventoryNotesRepository inventoryNotesRepository;
     private final HistoryService historyService;
+    private final InventoryService inventoryService;
 
     public InventoryNotesService(
             InventoryRepository inventoryRepository,
             InventoryNotesRepository inventoryNotesRepository,
-            HistoryService historyService
+            HistoryService historyService,
+            InventoryService inventoryService
     ) {
         this.inventoryRepository = inventoryRepository;
         this.inventoryNotesRepository = inventoryNotesRepository;
         this.historyService = historyService;
+        this.inventoryService = inventoryService;
     }
 
 
-    public List<InventoryNotes> getNotes(Long inventoryId) {
-        if (!inventoryRepository.existsById(inventoryId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    ErrorMessages.INVENTORY_NOT_FOUND
-            );
-        }
+    public List<InventoryNotes> getNotes(Long inventoryId, Authentication authentication) {
+        inventoryService.getInventory(inventoryId, authentication);
 
         return inventoryNotesRepository.findByInventoryIdOrderByCreatedAtDesc(inventoryId);
     }
 
-    public InventoryNotes addNote(Long inventoryId, String content, String author) {
-        Inventory inventory = inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        ErrorMessages.INVENTORY_NOT_FOUND
-                ));
+    public InventoryNotes addNote(Long inventoryId, String content, Authentication authentication) {
+        Inventory inventory = inventoryService.getInventory(inventoryId, authentication);
+        String author = getCurrentUsername(authentication);
 
         InventoryNotes note = new InventoryNotes(content, author, inventory);
         InventoryNotes savedNote = inventoryNotesRepository.save(note);
@@ -53,26 +47,39 @@ public class InventoryNotesService {
                 HistoryTargetType.INVENTORY,
                 inventory.getId(),
                 "Dodano notatkę",
-                getCurrentUsername()
+                getCurrentUsername(authentication)
         );
 
         return savedNote;
     }
 
-    public InventoryNotes updateNote(Long inventoryId, Long noteId, String content) {
+    public InventoryNotes updateNote(Long inventoryId, Long noteId, String content, Authentication authentication) {
+        inventoryService.getInventory(inventoryId, authentication);
+
         InventoryNotes note = inventoryNotesRepository.findByIdAndInventoryId(noteId, inventoryId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         ErrorMessages.NOTES_NOT_FOUND
                 ));
 
+        String oldContent = note.getContent();
         note.setContent(content);
+        InventoryNotes savedNote = inventoryNotesRepository.save(note);
 
-        return inventoryNotesRepository.save(note);
+        historyService.saveMessage(
+                HistoryTargetType.INVENTORY,
+                inventoryId,
+                "Zmieniono notatkę: " + oldContent + " -> " + content,
+                getCurrentUsername(authentication)
+        );
+
+        return savedNote;
 
     }
 
-    public void deleteNote(Long inventoryId, Long noteId ) {
+    public void deleteNote(Long inventoryId, Long noteId, Authentication authentication) {
+        inventoryService.getInventory(inventoryId, authentication);
+
         InventoryNotes note = inventoryNotesRepository.findByIdAndInventoryId(noteId, inventoryId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -83,14 +90,13 @@ public class InventoryNotesService {
                 HistoryTargetType.INVENTORY,
                 inventoryId,
                 "Usunięto notatkę: " + note.getContent(),
-                getCurrentUsername()
+                getCurrentUsername(authentication)
         );
 
         inventoryNotesRepository.delete(note);
     }
 
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    private String getCurrentUsername(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
