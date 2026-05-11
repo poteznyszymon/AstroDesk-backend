@@ -331,7 +331,6 @@ public class ImportService {
                 author
         );
 
-        // Set status only when item is not being assigned (assign() sets WYDANE itself)
         String assignedToUsername = get(row, "Przypisano do");
         if (isEmpty(assignedToUsername)) {
             String statusStr = get(row, "Status");

@@ -7,6 +7,7 @@ import io.astrodesk.user.UserDTO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.Formula;
 
 
 import java.time.LocalDate;
@@ -30,6 +31,7 @@ import java.util.List;
         "assignedBy",
         "assignedDate",
         "notes",
+        "connectionsCount",
         "status",
         "priority",
         "author",
@@ -40,6 +42,9 @@ public class Inventory {
 
     @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InventoryNotes> notes = new ArrayList<>();
+
+    @Formula("(SELECT COUNT(*) FROM inventory_connections c WHERE c.device_a_id = id OR c.device_b_id = id)")
+    private int connectionsCount;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -222,6 +227,10 @@ public class Inventory {
 
     public List<InventoryNotes> getNotes() {
         return notes;
+    }
+
+    public int getConnectionsCount() {
+        return connectionsCount;
     }
 
     public UserDTO getAuthor() {
