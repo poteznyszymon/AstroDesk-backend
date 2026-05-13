@@ -1,13 +1,16 @@
-# Docker LDAP + phpLDAPadmin + PostgreSQL
+# Docker LDAP + phpLDAPadmin + PostgreSQL + Backup system
 
 ## Description
 This project runs a Docker-based environment consisting of:
 - OpenLDAP
 - phpLDAPadmin (web UI for LDAP management)
 - PostgreSQL 18
+- Alpine:latest (backup system using crontab and postgresql-client)
 
-It also includes an `import.sh` script used to import LDAP data from the `user.ldif` file.
-
+Includes:
+   - `import.sh` script used to import LDAP data from the `user.ldif` file.
+   - 'backup.sh' script used to create logical backups and logs to 'backup.log' file
+   - 'backup_restore.sh' tool script for restoring actions to database
 ---
 
 
@@ -17,6 +20,9 @@ The project directory must contain:
 - `docker-compose.yml`
 - `import.sh`
 - `user.ldif`
+- 'backup.sh'
+- '/backups' dir
+- '/backups/backup.log'
 
 ---
 
@@ -83,6 +89,45 @@ The script:
 
 ---
 
+## Backup system description
+
+- Backup system runs on alpine:latest using crontab and postgresql-client.
+- Crontab is scheduled to execute script every 3 hours
+- Postgresql-client is used to create logical backups using pg_dump
+- The process is managed by the 'backup.sh' script by creating dumps to ./backups dir and appends execution logs to the ./backups/backup.log file
+
+## Restoring data from logical backup
+
+1. Run script:
+   ```bash
+   sudo ./backup_restore.sh
+   ```
+Tool script contains options such as:
+   1. Full restore
+      - Restores whole data and structure
+   WARNING:
+      Drops the entire database. Any schema changes deployed after the backup will be permanently lost.
+
+   2. Table restore
+      - Resetting isolated tables with no dependencies (Leaf Tables Only)
+   WARNING:
+      This option must never be used on core tables. This could cause key constraint deletion.
+
+   3. Data-only restore
+      - Resetting data without dropping the schema using TRUNCATE CASCADE
+   WARNING:
+      Always run this on the Root Aggregate (e.g users). If you run it on a child table,
+      the restore will fail if its parent record no longer exists in the current database .
+
+   4. Listing content of dump file
+      - Displays the dump file structure filtered by keywords (TABLE, VIEW, FUNCTION, SEQUENCE)
+   NOTE:
+      These keywords can be customized within the script to fit your specific needs.
+
+   5. Restore data to test DB
+      - Creates a new, isolated database called test_appdb and restores the data there safely.
+
+   
 ## Stopping and Removing the Environment
 
 To stop containers:

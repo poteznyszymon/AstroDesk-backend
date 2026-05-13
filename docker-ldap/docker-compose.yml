@@ -63,7 +63,7 @@ services:
       apk add postgresql-client tzdata &&
       cp /usr/share/zoneinfo/Europe/Warsaw /etc/localtime &&
       echo 'Europe/Warsaw' > /etc/timezone && 
-      echo '* * * * * /backup.sh' > /etc/crontabs/root &&
+      echo '0 */3 * * * /backup.sh' > /etc/crontabs/root &&
       echo 'DONE' &&
       exec crond -f -l 2
       "
