@@ -39,15 +39,6 @@ public class NetworkDevice {
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 
-    @Column(name = "is_imported", nullable = false)
-    private boolean imported;
-
-    @Column(name = "linked_asset_id")
-    private Long linkedAssetId;
-
-    @Column(name = "linked_asset_name")
-    private String linkedAssetName;
-
     @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, orphanRemoval = true,
                fetch = FetchType.LAZY)
     @OrderBy("seenAt DESC")

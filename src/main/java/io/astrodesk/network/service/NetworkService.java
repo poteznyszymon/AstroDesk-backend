@@ -35,16 +35,12 @@ public class NetworkService {
     @Autowired(required = false)
     private NetworkScannerService scanner;
 
-    // ── List / filter ────────────────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public Page<NetworkItemResponse> listDevices(NetworkDeviceFilter filter, Pageable pageable) {
         return deviceRepo
                 .findAll(NetworkDeviceSpecs.fromFilter(filter), pageable)
                 .map(mapper::toItemResponse);
     }
-
-    // ── Single device + history ──────────────────────────────────────────────
 
     @Transactional(readOnly = true)
     public NetworkDeviceDetail getDevice(Long id) {
@@ -69,14 +65,11 @@ public class NetworkService {
                           .toList();
     }
 
-    // ── Upsert (called by scanner) ───────────────────────────────────────────
-
     @Transactional
     public NetworkItemResponse upsertDevice(UpsertNetworkDeviceRequest req) {
         NetworkDevice device = deviceRepo.findByMacAddress(req.macAddress())
                 .orElseGet(() -> NetworkDevice.builder()
                         .macAddress(req.macAddress())
-                        .imported(false)
                         .hostnameCustomized(false)
                         .build());
 
@@ -85,7 +78,6 @@ public class NetworkService {
                 || !Objects.equals(req.switchPort(), device.getSwitchPort());
 
         device.setIpAddress(req.ipAddress());
-        // Nadpisuj hostname z nmap TYLKO jeśli użytkownik nie ustawił własnej
         if (!device.isHostnameCustomized()) {
             device.setHostname(req.hostname());
         }
@@ -111,40 +103,15 @@ public class NetworkService {
         return mapper.toItemResponse(device);
     }
 
-    // ── Link / unlink asset ──────────────────────────────────────────────────
-
-    @Transactional
-    public NetworkItemResponse linkAsset(Long deviceId, LinkAssetRequest req) {
-        NetworkDevice device = deviceRepo.findById(deviceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Device not found: " + deviceId));
-
-        if (req.linkedAssetId() == null) {
-            device.setImported(false);
-            device.setLinkedAssetId(null);
-            device.setLinkedAssetName(null);
-        } else {
-            device.setImported(true);
-            device.setLinkedAssetId(req.linkedAssetId());
-            device.setLinkedAssetName(req.linkedAssetName());
-        }
-
-        return mapper.toItemResponse(deviceRepo.save(device));
-    }
-
-    // ── Update hostname (ręczna edycja — blokuje nadpisywanie przez nmap) ────
-
     @Transactional
     public NetworkItemResponse updateHostname(Long id, String hostname) {
         NetworkDevice device = deviceRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Device not found: " + id));
         device.setHostname(hostname);
-        device.setHostnameCustomized(hostname != null); // null = resetuj do auto
+        device.setHostnameCustomized(hostname != null);
         return mapper.toItemResponse(deviceRepo.save(device));
     }
-
-    // ── Manual scan trigger ──────────────────────────────────────────────────
 
     public void triggerScan() {
         if (scanner == null) {

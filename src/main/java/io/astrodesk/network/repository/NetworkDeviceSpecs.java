@@ -31,9 +31,6 @@ public final class NetworkDeviceSpecs {
             if (f.vendors() != null && !f.vendors().isEmpty()) {
                 predicates.add(root.get("vendor").in(f.vendors()));
             }
-            if (f.isImported() != null) {
-                predicates.add(cb.equal(root.get("imported"), f.isImported()));
-            }
 
             return cb.and(predicates.toArray(Predicate[]::new));
         };
