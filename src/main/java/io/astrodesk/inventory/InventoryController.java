@@ -78,6 +78,7 @@ public class InventoryController {
                 inventory.getPrice(),
                 inventory.getInvoiceNumber(),
                 inventory.getLocation(),
+                inventory.getPort(),
                 inventory.getPriority(),
                 author
         );

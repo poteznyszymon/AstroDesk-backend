@@ -27,6 +27,7 @@ import java.util.List;
         "price",
         "invoiceNumber",
         "location",
+        "port",
         "assignedTo",
         "assignedBy",
         "assignedDate",
@@ -71,6 +72,8 @@ public class Inventory {
 
     private String location;
 
+    private String port;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to_id", referencedColumnName = "userId")
     private DbUserEntity assignedTo;
@@ -107,6 +110,7 @@ public class Inventory {
             Double price,
             String invoiceNumber,
             String location,
+            String port,
             InventoryPriority priority,
             DbUserEntity author
     ) {
@@ -118,6 +122,7 @@ public class Inventory {
         this.price = price;
         this.invoiceNumber = invoiceNumber;
         this.location = location;
+        this.port = port;
         this.priority = priority;
         this.author = author;
         this.status = InventoryStatus.DOSTEPNE;
@@ -203,6 +208,10 @@ public class Inventory {
 
     public String getLocation() {
         return location;
+    }
+
+    public String getPort() {
+        return port;
     }
 
     public LocalDate getAssignedDate() {
@@ -323,6 +332,10 @@ public class Inventory {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
     }
 
     public void setPriority(InventoryPriority priority) {

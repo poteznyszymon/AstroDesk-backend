@@ -41,6 +41,7 @@ public class InventoryService {
             Double price,
             String invoiceNumber,
             String location,
+            String port,
             InventoryPriority priority,
             DbUserEntity author
     ) {
@@ -53,6 +54,7 @@ public class InventoryService {
                 price,
                 invoiceNumber,
                 location,
+                port,
                 priority,
                 author
         );
@@ -388,6 +390,18 @@ public class InventoryService {
                     changedBy
             );
             inventory.setLocation(updatedInventory.getLocation());
+        }
+
+        if (updatedInventory.getPort() != null) {
+            historyService.saveFieldChange(
+                    HistoryTargetType.INVENTORY,
+                    inventory.getId(),
+                    "port",
+                    inventory.getPort(),
+                    updatedInventory.getPort(),
+                    changedBy
+            );
+            inventory.setPort(updatedInventory.getPort());
         }
 
         if (updatedInventory.getPriority() != null) {

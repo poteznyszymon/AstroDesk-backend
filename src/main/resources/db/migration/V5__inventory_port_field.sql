@@ -1,0 +1,1 @@
+ALTER TABLE inventory ADD COLUMN port VARCHAR(100);

@@ -327,6 +327,7 @@ public class ImportService {
                 price,
                 emptyToNull(get(row, "Numer faktury")),
                 emptyToNull(get(row, "Lokalizacja")),
+                emptyToNull(get(row, "Port")),
                 priority,
                 author
         );
