@@ -39,11 +39,11 @@ public class MockNetworkScannerService implements NetworkScannerService {
     @Scheduled(fixedDelayString = "${network.scanner.interval-ms:60000}")
     public void scheduledScan() {
         log.info("[MockScanner] Starting scheduled network scan...");
-        scanNow();
+        scanNow(List.of());
     }
 
     @Override
-    public void scanNow() {
+    public void scanNow(List<String> subnets) {
         log.info("[MockScanner] Scanning {} mock devices", MOCK_DEVICES.size());
 
         for (int i = 0; i < MOCK_DEVICES.size(); i++) {

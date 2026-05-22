@@ -5,62 +5,77 @@ import io.astrodesk.network.service.NetworkService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
-@Profile("prod")
+@Profile("!dev")
 @RequiredArgsConstructor
 public class RealNetworkScannerService implements NetworkScannerService {
 
     private final NmapRunner nmapRunner;
+    private final NetworkEnricher enricher;
 
     @Lazy
     @Autowired
     private NetworkService networkService;
 
-    @Value("${network.scanner.subnet:192.168.1.0/24}")
-    private String subnet;
-
-    @Scheduled(fixedDelayString = "${network.scanner.interval-ms:300000}")
-    public void scheduledScan() {
-        log.info("[RealScanner] Scheduled scan of {}", subnet);
-        scanNow();
-    }
-
     @Override
-    public void scanNow() {
-        List<NmapScanResult> results;
-        try {
-            results = nmapRunner.scan(subnet);
-        } catch (Exception e) {
-            log.error("[RealScanner] nmap failed: {}", e.getMessage());
+    public void scanNow(List<String> subnets) {
+        if (subnets == null || subnets.isEmpty()) {
+            log.warn("[RealScanner] No subnets provided, skipping scan");
             return;
         }
 
-        log.info("[RealScanner] Found {} devices", results.size());
+        Map<String, String> arpTable = enricher.getArpTable();
+        log.info("[RealScanner] ARP table: {} entries", arpTable.size());
 
-        for (NmapScanResult result : results) {
-            // switchName/switchPort niedostępne przez nmap (tylko przez SNMP na zarządzalnym switchu)
-            UpsertNetworkDeviceRequest req = new UpsertNetworkDeviceRequest(
-                    result.macAddress(),
-                    result.ipAddress(),
-                    result.hostname(),
-                    result.vendor(),
-                    null,
-                    null
-            );
+        for (String subnet : subnets) {
+            log.info("[RealScanner] Scanning subnet: {}", subnet);
+            List<NmapScanResult> results;
             try {
-                networkService.upsertDevice(req);
+                results = nmapRunner.scan(subnet);
             } catch (Exception e) {
-                log.warn("[RealScanner] Failed to upsert {}: {}", result.macAddress(), e.getMessage());
+                log.error("[RealScanner] nmap failed for {}: {}", subnet, e.getMessage());
+                continue;
+            }
+
+            log.info("[RealScanner] Found {} devices in {}", results.size(), subnet);
+
+            for (NmapScanResult result : results) {
+                String mac    = resolveMac(result.ipAddress(), arpTable);
+                String vendor = result.vendor() != null ? result.vendor() : enricher.lookupVendor(mac);
+
+                UpsertNetworkDeviceRequest req = new UpsertNetworkDeviceRequest(
+                        mac,
+                        result.ipAddress(),
+                        result.hostname(),
+                        vendor,
+                        null,
+                        null
+                );
+                try {
+                    networkService.upsertDevice(req);
+                } catch (Exception e) {
+                    log.warn("[RealScanner] Failed to upsert {}: {}", mac, e.getMessage());
+                }
             }
         }
+    }
+
+    private String resolveMac(String ip, Map<String, String> arpTable) {
+        // 1. Own interface
+        String mac = enricher.getMacForLocalIp(ip);
+        if (mac != null) return mac;
+        // 2. ARP cache
+        mac = arpTable.get(ip);
+        if (mac != null) return mac;
+        // 3. Fallback
+        return "IP:" + ip;
     }
 }

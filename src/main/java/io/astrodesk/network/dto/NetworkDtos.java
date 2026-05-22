@@ -45,4 +45,13 @@ public class NetworkDtos {
             String switchName,
             List<String> vendors
     ) {}
+
+    public record AvailableSubnetResponse(
+            String interfaceName,
+            String subnet
+    ) {}
+
+    public record ScanRequest(
+            List<String> subnets
+    ) {}
 }

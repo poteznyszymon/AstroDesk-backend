@@ -1,5 +1,6 @@
 package io.astrodesk.network.scanner;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -9,7 +10,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,24 +18,44 @@ import java.util.List;
 @Component
 public class NmapRunner {
 
-    // Ścieżka do nmap.exe — zmień jeśli masz inną instalację
-    @Value("${network.scanner.nmap-path:nmap}")
-    private String nmapPath;
+    @Value("${network.scanner.nmap-path:}")
+    private String configuredNmapPath;
 
-    // Porty do skanowania
     @Value("${network.scanner.ports:22,80,443,3389,8080,445,139,21,25,53}")
     private String ports;
 
-    /**
-     * Skanuje podaną podsieć i zwraca listę znalezionych hostów.
-     * Wymaga uruchomienia jako Administrator (żeby nmap mógł odczytać MAC adresy).
-     */
+    private String nmapPath;
+
+    private static final List<String> CANDIDATE_PATHS = List.of(
+        "/opt/homebrew/bin/nmap",
+        "/usr/local/bin/nmap",
+        "/usr/bin/nmap",
+        "/bin/nmap",
+        "C:/Program Files (x86)/Nmap/nmap.exe",
+        "C:/Program Files/Nmap/nmap.exe"
+    );
+
+    @PostConstruct
+    void resolveNmapPath() {
+        if (!configuredNmapPath.isBlank()) {
+            nmapPath = configuredNmapPath;
+            log.info("[NmapRunner] Using configured nmap path: {}", nmapPath);
+            return;
+        }
+
+        for (String candidate : CANDIDATE_PATHS) {
+            if (new File(candidate).exists()) {
+                nmapPath = candidate;
+                log.info("[NmapRunner] Found nmap at: {}", nmapPath);
+                return;
+            }
+        }
+
+        nmapPath = "nmap";
+        log.info("[NmapRunner] Falling back to nmap from PATH");
+    }
+
     public List<NmapScanResult> scan(String subnet) throws Exception {
-        // -sn  = ping scan (odkryj hosty)
-        // -T4  = szybkie timeouty
-        // --open = pokaż tylko otwarte porty
-        // -oX - = wyślij XML na stdout
-        // -p    = porty do skanowania
         String args = String.format(
             "-T4 --host-timeout 10s --open -oX - -R -p %s %s",
             ports, subnet

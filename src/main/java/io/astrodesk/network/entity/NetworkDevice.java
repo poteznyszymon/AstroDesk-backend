@@ -27,6 +27,9 @@ public class NetworkDevice {
     @Column(name = "hostname_customized", nullable = false)
     private boolean hostnameCustomized = false;
 
+    @Column(name = "is_imported", nullable = false)
+    private boolean isImported = false;
+
     @Column(name = "vendor", length = 100)
     private String vendor;
 

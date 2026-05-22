@@ -113,11 +113,11 @@ public class NetworkService {
         return mapper.toItemResponse(deviceRepo.save(device));
     }
 
-    public void triggerScan() {
+    public void triggerScan(List<String> subnets) {
         if (scanner == null) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "Scanner not available in current profile");
         }
-        CompletableFuture.runAsync(scanner::scanNow);
+        CompletableFuture.runAsync(() -> scanner.scanNow(subnets));
     }
 }
