@@ -1,0 +1,53 @@
+[2026-05-19 17:08:00] [INFO] ===== START BACKUP =====
+[2026-05-19 17:09:00] [INFO] ===== START BACKUP =====
+[2026-05-19 17:10:00] [INFO] ===== START BACKUP =====
+[2026-05-19 18:00:00] [INFO] ===== START BACKUP =====
+[2026-05-19 18:00:00] [INFO] Katalog docelowy: /backups/19-05-2026
+[2026-05-19 18:00:00] [INFO] Backup utworzony: /backups/19-05-2026/postgres_18-00.dump
+[2026-05-19 18:00:00] [INFO] ===== KONIEC =====
+[2026-05-19 18:00:00] [INFO] 
+[2026-05-19 21:00:00] [INFO] ===== START BACKUP =====
+[2026-05-19 21:00:00] [INFO] Katalog docelowy: /backups/19-05-2026
+[2026-05-19 21:00:00] [INFO] Backup utworzony: /backups/19-05-2026/postgres_21-00.dump
+[2026-05-19 21:00:00] [INFO] ===== KONIEC =====
+[2026-05-19 21:00:00] [INFO] 
+[2026-05-20 00:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 00:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 00:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_00-00.dump
+[2026-05-20 00:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 00:00:00] [INFO] 
+[2026-05-20 03:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 03:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 03:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_03-00.dump
+[2026-05-20 03:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 03:00:00] [INFO] 
+[2026-05-20 06:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 06:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 06:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_06-00.dump
+[2026-05-20 06:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 06:00:00] [INFO] 
+[2026-05-20 09:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 09:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 09:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_09-00.dump
+[2026-05-20 09:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 09:00:00] [INFO] 
+[2026-05-20 12:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 12:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 12:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_12-00.dump
+[2026-05-20 12:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 12:00:00] [INFO] 
+[2026-05-20 15:00:00] [INFO] ===== START BACKUP =====
+[2026-05-20 15:00:00] [INFO] Katalog docelowy: /backups/20-05-2026
+[2026-05-20 15:00:00] [INFO] Backup utworzony: /backups/20-05-2026/postgres_15-00.dump
+[2026-05-20 15:00:00] [INFO] ===== KONIEC =====
+[2026-05-20 15:00:00] [INFO] 
+[2026-05-22 21:00:00] [INFO] ===== START BACKUP =====
+[2026-05-22 21:00:00] [INFO] Katalog docelowy: /backups/22-05-2026
+[2026-05-22 21:00:00] [INFO] Backup utworzony: /backups/22-05-2026/postgres_21-00.dump
+[2026-05-22 21:00:00] [INFO] ===== KONIEC =====
+[2026-05-22 21:00:00] [INFO] 
+[2026-05-23 09:00:00] [INFO] ===== START BACKUP =====
+[2026-05-23 09:00:00] [INFO] Katalog docelowy: /backups/23-05-2026
+[2026-05-23 09:00:00] [INFO] Backup utworzony: /backups/23-05-2026/postgres_09-00.dump
+[2026-05-23 09:00:00] [INFO] ===== KONIEC =====
+[2026-05-23 09:00:00] [INFO] 

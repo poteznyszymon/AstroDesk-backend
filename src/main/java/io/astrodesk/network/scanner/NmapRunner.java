@@ -1,6 +1,5 @@
 package io.astrodesk.network.scanner;
 
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,161 +9,172 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 public class NmapRunner {
 
-    @Value("${network.scanner.nmap-path:}")
-    private String configuredNmapPath;
-
-    @Value("${network.scanner.ports:22,80,443,3389,8080,445,139,21,25,53}")
-    private String ports;
-
+    @Value("${network.scanner.nmap-path:nmap}")
     private String nmapPath;
 
-    private static final List<String> CANDIDATE_PATHS = List.of(
-        "/opt/homebrew/bin/nmap",
-        "/usr/local/bin/nmap",
-        "/usr/bin/nmap",
-        "/bin/nmap",
-        "C:/Program Files (x86)/Nmap/nmap.exe",
-        "C:/Program Files/Nmap/nmap.exe"
-    );
+    @Value("${network.scanner.ports:21,22,23,53,80,135,139,443,445,554,631,3389,5000,8009,8080,8443,9100,32400}")
+    private String ports;
 
-    @PostConstruct
-    void resolveNmapPath() {
-        if (!configuredNmapPath.isBlank()) {
-            nmapPath = configuredNmapPath;
-            log.info("[NmapRunner] Using configured nmap path: {}", nmapPath);
-            return;
-        }
+    @Value("${network.scanner.scan-timeout-seconds:120}")
+    private int scanTimeoutSeconds;
 
-        for (String candidate : CANDIDATE_PATHS) {
-            if (new File(candidate).exists()) {
-                nmapPath = candidate;
-                log.info("[NmapRunner] Found nmap at: {}", nmapPath);
-                return;
+    private final boolean needsSudo = !"root".equals(System.getProperty("user.name"));
+
+    public List<DeviceScanResult> scan(String cidr) {
+        log.info("[Nmap] Starting scan of {}", cidr);
+
+        List<String> cmd = new ArrayList<>();
+        if (needsSudo) cmd.add("sudo");
+        cmd.addAll(List.of(nmapPath, "-sS", "-p", ports, "--script", "nbstat", "-oX", "-", cidr));
+        log.debug("[Nmap] Command: {}", String.join(" ", cmd));
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.redirectErrorStream(false);
+            Process process = pb.start();
+
+            CompletableFuture<String> stdoutFuture = CompletableFuture.supplyAsync(() -> {
+                try { return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8); }
+                catch (Exception e) { return ""; }
+            });
+            CompletableFuture<String> stderrFuture = CompletableFuture.supplyAsync(() -> {
+                try { return new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8); }
+                catch (Exception e) { return ""; }
+            });
+
+            boolean finished = process.waitFor(scanTimeoutSeconds, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                log.error("[Nmap] Scan timed out after {}s for {}", scanTimeoutSeconds, cidr);
+                return List.of();
             }
-        }
 
-        nmapPath = "nmap";
-        log.info("[NmapRunner] Falling back to nmap from PATH");
+            String xml = stdoutFuture.join();
+            String stderr = stderrFuture.join();
+
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                log.error("[Nmap] Exit code {} for {}. stderr: {}", exitCode, cidr, stderr.trim());
+                return List.of();
+            }
+
+            List<DeviceScanResult> results = parseXml(xml);
+            log.info("[Nmap] Found {} hosts in {}", results.size(), cidr);
+            return results;
+
+        } catch (Exception e) {
+            log.error("[Nmap] Failed to run scan for {}: {}", cidr, e.getMessage(), e);
+            return List.of();
+        }
     }
 
-    public List<NmapScanResult> scan(String subnet) throws Exception {
-        String args = String.format(
-            "-T4 --host-timeout 10s --open -oX - -R -p %s %s",
-            ports, subnet
-        );
+    private List<DeviceScanResult> parseXml(String xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
 
-        log.info("[NmapRunner] Running: {} {}", nmapPath, args);
+        Document doc = factory.newDocumentBuilder()
+                .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
 
-        ProcessBuilder pb = new ProcessBuilder();
-        pb.command(buildCommand(args));
-        pb.redirectErrorStream(false);
-
-        Process process = pb.start();
-
-        // Czytamy stdout (XML) i stderr osobno
-        byte[] xmlOutput = process.getInputStream().readAllBytes();
-        byte[] errOutput = process.getErrorStream().readAllBytes();
-
-        int exitCode = process.waitFor();
-
-        if (errOutput.length > 0) {
-            log.debug("[NmapRunner] stderr: {}", new String(errOutput));
-        }
-        if (exitCode != 0) {
-            throw new RuntimeException("nmap exited with code " + exitCode + ": " + new String(errOutput));
-        }
-
-        return parseXml(xmlOutput);
-    }
-
-    // ── XML parsing ──────────────────────────────────────────────────────────
-
-    private List<NmapScanResult> parseXml(byte[] xml) throws Exception {
-        List<NmapScanResult> results = new ArrayList<>();
-
-        Document doc = DocumentBuilderFactory.newInstance()
-                .newDocumentBuilder()
-                .parse(new ByteArrayInputStream(xml));
-
+        List<DeviceScanResult> results = new ArrayList<>();
         NodeList hosts = doc.getElementsByTagName("host");
 
         for (int i = 0; i < hosts.getLength(); i++) {
             Element host = (Element) hosts.item(i);
 
-            // Tylko hosty które odpowiedziały
-            Element status = (Element) host.getElementsByTagName("status").item(0);
-            if (status == null || !"up".equals(status.getAttribute("state"))) continue;
+            String status = getChildText(host, "status", "state");
+            if (!"up".equals(status)) continue;
 
-            String ipAddress  = null;
-            String macAddress = null;
-            String vendor     = null;
+            String ip = null;
+            String mac = null;
+            String vendor = null;
 
-            // Adresy IP i MAC
             NodeList addresses = host.getElementsByTagName("address");
             for (int j = 0; j < addresses.getLength(); j++) {
                 Element addr = (Element) addresses.item(j);
-                switch (addr.getAttribute("addrtype")) {
-                    case "ipv4" -> ipAddress  = addr.getAttribute("addr");
-                    case "mac"  -> {
-                        macAddress = addr.getAttribute("addr");
-                        vendor     = addr.getAttribute("vendor");
-                        if (vendor.isBlank()) vendor = null;
-                    }
+                String type = addr.getAttribute("addrtype");
+                if ("ipv4".equals(type)) {
+                    ip = addr.getAttribute("addr");
+                } else if ("mac".equals(type)) {
+                    mac = addr.getAttribute("addr").toUpperCase();
+                    String v = addr.getAttribute("vendor");
+                    if (v != null && !v.isBlank()) vendor = v;
                 }
             }
 
-            if (ipAddress == null) continue;
-            if (macAddress == null) macAddress = "IP:" + ipAddress; // fallback bez uprawnień admina
+            if (ip == null) continue;
 
-            // Hostname
             String hostname = null;
             NodeList hostnames = host.getElementsByTagName("hostname");
-            if (hostnames.getLength() > 0) {
-                String name = ((Element) hostnames.item(0)).getAttribute("name");
-                if (!name.isBlank()) hostname = name;
-            }
-
-            // Otwarte porty
-            List<NmapScanResult.OpenPort> openPorts = new ArrayList<>();
-            NodeList ports = host.getElementsByTagName("port");
-            for (int k = 0; k < ports.getLength(); k++) {
-                Element port    = (Element) ports.item(k);
-                Element portState = (Element) port.getElementsByTagName("state").item(0);
-                if (portState == null || !"open".equals(portState.getAttribute("state"))) continue;
-
-                int    portNumber = Integer.parseInt(port.getAttribute("portid"));
-                String service    = "unknown";
-                Element svc = (Element) port.getElementsByTagName("service").item(0);
-                if (svc != null && !svc.getAttribute("name").isBlank()) {
-                    service = svc.getAttribute("name");
+            for (int j = 0; j < hostnames.getLength(); j++) {
+                Element hn = (Element) hostnames.item(j);
+                String name = hn.getAttribute("name");
+                if (name != null && !name.isBlank()) {
+                    hostname = name;
+                    break;
                 }
-                openPorts.add(new NmapScanResult.OpenPort(portNumber, service));
             }
 
-            results.add(new NmapScanResult(ipAddress, macAddress, hostname, vendor, openPorts));
-            log.debug("[NmapRunner] Found: {} ({}) vendor={} ports={}", ipAddress, macAddress, vendor, openPorts.size());
+            if (hostname == null) {
+                hostname = parseNbstatName(host);
+            }
+
+            List<DeviceScanResult.OpenPort> openPorts = new ArrayList<>();
+            NodeList portsNodes = host.getElementsByTagName("port");
+            for (int j = 0; j < portsNodes.getLength(); j++) {
+                Element port = (Element) portsNodes.item(j);
+                Element state = getChildElement(port, "state");
+                if (state == null || !"open".equals(state.getAttribute("state"))) continue;
+
+                int portNum = Integer.parseInt(port.getAttribute("portid"));
+                Element service = getChildElement(port, "service");
+                String serviceName = service != null ? service.getAttribute("name") : "unknown";
+                openPorts.add(new DeviceScanResult.OpenPort(portNum, serviceName));
+            }
+
+            results.add(new DeviceScanResult(ip, mac, hostname, vendor, openPorts));
         }
 
-        log.info("[NmapRunner] Parsed {} hosts from XML", results.size());
         return results;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    private String parseNbstatName(Element host) {
+        NodeList scripts = host.getElementsByTagName("script");
+        for (int i = 0; i < scripts.getLength(); i++) {
+            Element script = (Element) scripts.item(i);
+            if (!"nbstat".equals(script.getAttribute("id"))) continue;
 
-    private List<String> buildCommand(String args) {
-        List<String> cmd = new ArrayList<>();
-        cmd.add(nmapPath);
-        for (String arg : args.split(" ")) {
-            if (!arg.isBlank()) cmd.add(arg);
+            NodeList elems = script.getElementsByTagName("elem");
+            for (int j = 0; j < elems.getLength(); j++) {
+                Element elem = (Element) elems.item(j);
+                if ("server_name".equals(elem.getAttribute("key"))) {
+                    String name = elem.getTextContent().trim();
+                    if (!name.isBlank()) return name;
+                }
+            }
         }
-        return cmd;
+        return null;
+    }
+
+    private String getChildText(Element parent, String tagName, String attribute) {
+        NodeList nodes = parent.getElementsByTagName(tagName);
+        if (nodes.getLength() == 0) return null;
+        return ((Element) nodes.item(0)).getAttribute(attribute);
+    }
+
+    private Element getChildElement(Element parent, String tagName) {
+        NodeList nodes = parent.getElementsByTagName(tagName);
+        return nodes.getLength() > 0 ? (Element) nodes.item(0) : null;
     }
 }

@@ -39,6 +39,9 @@ public class NetworkDevice {
     @Column(name = "switch_port", length = 30)
     private String switchPort;
 
+    @Column(name = "open_ports", length = 500)
+    private String openPorts;
+
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 

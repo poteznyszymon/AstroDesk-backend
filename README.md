@@ -11,6 +11,7 @@ Spring Boot REST API for the AstroDesk helpdesk system.
 - Java 17+
 - Maven (or use the included `./mvnw`)
 - Docker + Docker Compose
+- nmap (`brew install nmap` on macOS, `apt install nmap` on Linux)
 
 ---
 
@@ -47,7 +48,45 @@ import.bat
 
 > Run this **once** after first `docker compose up`. The script copies `user.ldif` into the LDAP container and imports all users and groups.
 
-### 3. Run the backend
+### 3. Configure nmap (passwordless sudo)
+
+Network scanning uses nmap with SYN scan, which requires root privileges. To avoid entering a password every time:
+
+**macOS:**
+```bash
+sudo visudo -f /etc/sudoers.d/nmap
+```
+Add the following line (replace `your_username` with your macOS username):
+```
+your_username ALL=(ALL) NOPASSWD: /opt/homebrew/bin/nmap
+```
+
+**Linux:**
+```bash
+sudo visudo -f /etc/sudoers.d/nmap
+```
+```
+your_username ALL=(ALL) NOPASSWD: /usr/bin/nmap
+```
+
+**Windows:**
+
+Nmap on Windows does not need sudo — it uses Npcap driver instead. Install:
+1. [Nmap](https://nmap.org/download.html) — installer adds nmap to PATH
+2. During installation, make sure **Npcap** is checked (included by default)
+
+Verify it works:
+```bash
+# macOS/Linux
+sudo -n nmap --version
+
+# Windows
+nmap --version
+```
+
+> In Docker the container runs as root, so this step is not needed.
+
+### 4. Run the backend
 
 From the project root:
 

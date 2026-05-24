@@ -6,20 +6,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Profile("!dev")
 @RequiredArgsConstructor
 public class RealNetworkScannerService implements NetworkScannerService {
 
-    private final NmapRunner nmapRunner;
-    private final NetworkEnricher enricher;
+    private final NmapRunner nmap;
 
     @Lazy
     @Autowired
@@ -32,32 +29,28 @@ public class RealNetworkScannerService implements NetworkScannerService {
             return;
         }
 
-        Map<String, String> arpTable = enricher.getArpTable();
-        log.info("[RealScanner] ARP table: {} entries", arpTable.size());
-
         for (String subnet : subnets) {
             log.info("[RealScanner] Scanning subnet: {}", subnet);
-            List<NmapScanResult> results;
+            List<DeviceScanResult> results;
             try {
-                results = nmapRunner.scan(subnet);
+                results = nmap.scan(subnet);
             } catch (Exception e) {
-                log.error("[RealScanner] nmap failed for {}: {}", subnet, e.getMessage());
+                log.error("[RealScanner] Scan failed for {}: {}", subnet, e.getMessage());
                 continue;
             }
 
-            log.info("[RealScanner] Found {} devices in {}", results.size(), subnet);
-
-            for (NmapScanResult result : results) {
-                String mac    = resolveMac(result.ipAddress(), arpTable);
-                String vendor = result.vendor() != null ? result.vendor() : enricher.lookupVendor(mac);
+            for (DeviceScanResult result : results) {
+                String mac = result.macAddress() != null ? result.macAddress() : "IP:" + result.ipAddress();
+                String openPorts = formatPorts(result.openPorts());
 
                 UpsertNetworkDeviceRequest req = new UpsertNetworkDeviceRequest(
                         mac,
                         result.ipAddress(),
                         result.hostname(),
-                        vendor,
+                        result.vendor(),
                         null,
-                        null
+                        null,
+                        openPorts
                 );
                 try {
                     networkService.upsertDevice(req);
@@ -68,14 +61,11 @@ public class RealNetworkScannerService implements NetworkScannerService {
         }
     }
 
-    private String resolveMac(String ip, Map<String, String> arpTable) {
-        // 1. Own interface
-        String mac = enricher.getMacForLocalIp(ip);
-        if (mac != null) return mac;
-        // 2. ARP cache
-        mac = arpTable.get(ip);
-        if (mac != null) return mac;
-        // 3. Fallback
-        return "IP:" + ip;
+    private String formatPorts(List<DeviceScanResult.OpenPort> ports) {
+        if (ports == null || ports.isEmpty()) return null;
+        String csv = ports.stream()
+                .map(p -> p.port() + "/" + p.service())
+                .collect(Collectors.joining(","));
+        return csv.length() > 500 ? csv.substring(0, 497) + "..." : csv;
     }
 }

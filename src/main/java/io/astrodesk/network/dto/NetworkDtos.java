@@ -13,6 +13,7 @@ public class NetworkDtos {
             String vendor,
             String switchName,
             String switchPort,
+            String openPorts,
             Instant lastSeenAt
     ) {}
 
@@ -36,7 +37,8 @@ public class NetworkDtos {
             String hostname,
             String vendor,
             String switchName,
-            String switchPort
+            String switchPort,
+            String openPorts
     ) {}
 
     public record NetworkDeviceFilter(

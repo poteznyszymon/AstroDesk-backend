@@ -67,6 +67,18 @@ public class NetworkService {
 
     @Transactional
     public NetworkItemResponse upsertDevice(UpsertNetworkDeviceRequest req) {
+        // Scal stary placeholder "IP:<ip>" gdy teraz znamy prawdziwy MAC dla tego samego IP.
+        if (req.macAddress() != null
+                && !req.macAddress().startsWith("IP:")
+                && req.ipAddress() != null) {
+            String placeholderMac = "IP:" + req.ipAddress();
+            deviceRepo.findByMacAddress(placeholderMac).ifPresent(placeholder -> {
+                historyRepo.deleteAll(
+                        historyRepo.findByMacAddressOrderBySeenAtDesc(placeholderMac));
+                deviceRepo.delete(placeholder);
+            });
+        }
+
         NetworkDevice device = deviceRepo.findByMacAddress(req.macAddress())
                 .orElseGet(() -> NetworkDevice.builder()
                         .macAddress(req.macAddress())
@@ -84,6 +96,7 @@ public class NetworkService {
         device.setVendor(req.vendor());
         device.setSwitchName(req.switchName());
         device.setSwitchPort(req.switchPort());
+        device.setOpenPorts(req.openPorts());
         device.setLastSeenAt(Instant.now());
 
         device = deviceRepo.save(device);

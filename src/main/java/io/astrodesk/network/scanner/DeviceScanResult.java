@@ -2,7 +2,7 @@ package io.astrodesk.network.scanner;
 
 import java.util.List;
 
-public record NmapScanResult(
+public record DeviceScanResult(
         String ipAddress,
         String macAddress,
         String hostname,
