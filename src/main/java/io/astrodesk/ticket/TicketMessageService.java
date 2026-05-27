@@ -14,12 +14,14 @@ public class TicketMessageService {
     private final TicketService ticketService;
     private final UserService userService;
     private final TicketMessageMapper  messageMapper;
+    private final TicketWebSocketHandler webSocketHandler;
 
-    public TicketMessageService(TicketMessageRepository messageRepository, TicketService ticketService, UserService userService, TicketMessageMapper messageMapper) {
+    public TicketMessageService(TicketMessageRepository messageRepository, TicketService ticketService, UserService userService, TicketMessageMapper messageMapper, TicketWebSocketHandler webSocketHandler) {
         this.messageRepository = messageRepository;
         this.ticketService = ticketService;
         this.userService = userService;
         this.messageMapper = messageMapper;
+        this.webSocketHandler = webSocketHandler;
     }
 
     public TicketMessageDTO addMessage(Long ticketId, String content, Authentication authentication) {
@@ -44,8 +46,9 @@ public class TicketMessageService {
 
         TicketMessageEntity message = new TicketMessageEntity(ticket, sender, content);
         TicketMessageEntity saved = messageRepository.save(message);
-
-        return messageMapper.toDTO(saved);
+        TicketMessageDTO dto = messageMapper.toDTO(saved);
+        webSocketHandler.broadcastNewMessage(ticketId, dto);
+        return dto;
     }
 
     public void deleteMessage(Long ticketId, Long messageId, Authentication authentication) {
@@ -67,6 +70,7 @@ public class TicketMessageService {
         }
 
         messageRepository.delete(message);
+        webSocketHandler.broadcastDeleteMessage(ticketId, messageId);
     }
 
     public TicketMessageDTO updateMessage(Long ticketId, Long messageId, String content, Authentication authentication) {
@@ -83,7 +87,9 @@ public class TicketMessageService {
         }
 
         message.setContent(content);
-        return messageMapper.toDTO(messageRepository.save(message));
+        TicketMessageDTO dto = messageMapper.toDTO(messageRepository.save(message));
+        webSocketHandler.broadcastUpdateMessage(ticketId, dto);
+        return dto;
     }
 
     public List<TicketMessageDTO> showMessagesForTicket(Long ticketId, Authentication authentication) {

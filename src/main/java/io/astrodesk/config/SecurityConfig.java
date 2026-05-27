@@ -44,14 +44,14 @@ public class SecurityConfig {
     @Value("${ldap.pwd}")
     private String ldapPwd;
 
-    @Bean
+@Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    AuthenticationManager ldapAuthManager,
                                                    LdapUserService ldapUserService) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/", "/login", "/logout", "/error").permitAll()
+                        .requestMatchers("/", "/login", "/logout", "/error", "/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
