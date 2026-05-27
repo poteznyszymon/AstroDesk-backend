@@ -85,17 +85,13 @@ public class NetworkService {
                         .hostnameCustomized(false)
                         .build());
 
-        boolean changed = !Objects.equals(req.ipAddress(), device.getIpAddress())
-                || !Objects.equals(req.switchName(), device.getSwitchName())
-                || !Objects.equals(req.switchPort(), device.getSwitchPort());
+        boolean changed = !Objects.equals(req.ipAddress(), device.getIpAddress());
 
         device.setIpAddress(req.ipAddress());
         if (!device.isHostnameCustomized()) {
             device.setHostname(req.hostname());
         }
         device.setVendor(req.vendor());
-        device.setSwitchName(req.switchName());
-        device.setSwitchPort(req.switchPort());
         device.setOpenPorts(req.openPorts());
         device.setLastSeenAt(Instant.now());
 
@@ -106,8 +102,6 @@ public class NetworkService {
                     .device(device)
                     .macAddress(device.getMacAddress())
                     .ipAddress(req.ipAddress())
-                    .switchName(req.switchName())
-                    .switchPort(req.switchPort())
                     .seenAt(device.getLastSeenAt())
                     .build();
             historyRepo.save(entry);
@@ -125,6 +119,7 @@ public class NetworkService {
         device.setHostnameCustomized(hostname != null);
         return mapper.toItemResponse(deviceRepo.save(device));
     }
+
 
     public void triggerScan(List<String> subnets) {
         if (scanner == null) {

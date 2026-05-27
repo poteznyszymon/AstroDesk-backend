@@ -24,10 +24,6 @@ public final class NetworkDeviceSpecs {
                 predicates.add(cb.like(cb.lower(root.get("macAddress")),
                         "%" + f.macAddress().toLowerCase() + "%"));
             }
-            if (f.switchName() != null && !f.switchName().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("switchName")),
-                        "%" + f.switchName().toLowerCase() + "%"));
-            }
             if (f.vendors() != null && !f.vendors().isEmpty()) {
                 predicates.add(root.get("vendor").in(f.vendors()));
             }

@@ -322,6 +322,7 @@ public class ImportService {
                 get(row, "Nazwa"),
                 itemType,
                 get(row, "Numer seryjny"),
+                emptyToNull(get(row, "Nr inwentarza")),
                 emptyToNull(get(row, "Model")),
                 boughtDate,
                 price,

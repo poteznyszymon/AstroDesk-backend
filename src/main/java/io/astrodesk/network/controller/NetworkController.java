@@ -28,11 +28,10 @@ public class NetworkController {
     public ResponseEntity<Page<NetworkItemResponse>> listDevices(
             @RequestParam(required = false) String hostname,
             @RequestParam(required = false) String macAddress,
-            @RequestParam(required = false) String switchName,
             @RequestParam(required = false) List<String> vendors,
             @PageableDefault(size = 50, sort = "lastSeenAt") Pageable pageable
     ) {
-        NetworkDeviceFilter filter = new NetworkDeviceFilter(hostname, macAddress, switchName, vendors);
+        NetworkDeviceFilter filter = new NetworkDeviceFilter(hostname, macAddress, vendors);
         return ResponseEntity.ok(networkService.listDevices(filter, pageable));
     }
 
@@ -59,6 +58,7 @@ public class NetworkController {
             @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(networkService.updateHostname(id, body.get("hostname")));
     }
+
 
     @GetMapping("/available-subnets")
     @PreAuthorize("hasAnyRole('ASSET_ADMIN', 'HEADADMIN')")

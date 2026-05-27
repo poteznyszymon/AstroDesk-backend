@@ -36,6 +36,7 @@ public class InventoryService {
             String name,
             InventoryItemType itemType,
             String serialNumber,
+            String inventoryNumber,
             String model,
             LocalDate boughtDate,
             Double price,
@@ -49,6 +50,7 @@ public class InventoryService {
                 name,
                 itemType,
                 serialNumber,
+                inventoryNumber,
                 model,
                 boughtDate,
                 price,
@@ -366,6 +368,18 @@ public class InventoryService {
                     changedBy
             );
             inventory.setPrice(updatedInventory.getPrice());
+        }
+
+        if (updatedInventory.getInventoryNumber() != null) {
+            historyService.saveFieldChange(
+                    HistoryTargetType.INVENTORY,
+                    inventory.getId(),
+                    "inventoryNumber",
+                    inventory.getInventoryNumber(),
+                    updatedInventory.getInventoryNumber(),
+                    changedBy
+            );
+            inventory.setInventoryNumber(updatedInventory.getInventoryNumber());
         }
 
         if (updatedInventory.getInvoiceNumber() != null) {

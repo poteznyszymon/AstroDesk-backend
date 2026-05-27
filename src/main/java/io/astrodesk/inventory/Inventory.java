@@ -22,6 +22,7 @@ import java.util.List;
         "name",
         "itemType",
         "serialNumber",
+        "inventoryNumber",
         "model",
         "boughtDate",
         "price",
@@ -66,6 +67,8 @@ public class Inventory {
 
     private String model;
 
+    private String inventoryNumber;
+
     private LocalDate boughtDate;
     private Double price;
     private String invoiceNumber;
@@ -105,6 +108,7 @@ public class Inventory {
             String name,
             InventoryItemType itemType,
             String serialNumber,
+            String inventoryNumber,
             String model,
             LocalDate boughtDate,
             Double price,
@@ -117,6 +121,7 @@ public class Inventory {
         this.name = name;
         this.itemType = itemType;
         this.serialNumber = serialNumber;
+        this.inventoryNumber = inventoryNumber;
         this.model = model;
         this.boughtDate = boughtDate;
         this.price = price;
@@ -200,6 +205,10 @@ public class Inventory {
 
     public Double getPrice() {
         return price;
+    }
+
+    public String getInventoryNumber() {
+        return inventoryNumber;
     }
 
     public String getInvoiceNumber() {
@@ -324,6 +333,10 @@ public class Inventory {
 
     public void setPrice(Double price) {
         this.price = price;
+    }
+
+    public void setInventoryNumber(String inventoryNumber) {
+        this.inventoryNumber = inventoryNumber;
     }
 
     public void setInvoiceNumber(String invoiceNumber) {

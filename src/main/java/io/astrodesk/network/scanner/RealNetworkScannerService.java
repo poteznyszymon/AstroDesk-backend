@@ -48,8 +48,6 @@ public class RealNetworkScannerService implements NetworkScannerService {
                         result.ipAddress(),
                         result.hostname(),
                         result.vendor(),
-                        null,
-                        null,
                         openPorts
                 );
                 try {

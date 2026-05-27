@@ -33,12 +33,6 @@ public class NetworkDevice {
     @Column(name = "vendor", length = 100)
     private String vendor;
 
-    @Column(name = "switch_name", length = 100)
-    private String switchName;
-
-    @Column(name = "switch_port", length = 30)
-    private String switchPort;
-
     @Column(name = "open_ports", length = 500)
     private String openPorts;
 

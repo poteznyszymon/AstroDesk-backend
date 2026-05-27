@@ -11,8 +11,6 @@ public class NetworkDtos {
             String ipAddress,
             String hostname,
             String vendor,
-            String switchName,
-            String switchPort,
             String openPorts,
             Instant lastSeenAt
     ) {}
@@ -21,8 +19,6 @@ public class NetworkDtos {
             Long id,
             String macAddress,
             String ipAddress,
-            String switchName,
-            String switchPort,
             Instant seenAt
     ) {}
 
@@ -36,15 +32,12 @@ public class NetworkDtos {
             String ipAddress,
             String hostname,
             String vendor,
-            String switchName,
-            String switchPort,
             String openPorts
     ) {}
 
     public record NetworkDeviceFilter(
             String hostname,
             String macAddress,
-            String switchName,
             List<String> vendors
     ) {}
 

@@ -27,12 +27,6 @@ public class NetworkHistory {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    @Column(name = "switch_name", length = 100)
-    private String switchName;
-
-    @Column(name = "switch_port", length = 30)
-    private String switchPort;
-
     @Column(name = "seen_at", nullable = false)
     private Instant seenAt;
 }

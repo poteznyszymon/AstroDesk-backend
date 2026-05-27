@@ -73,6 +73,7 @@ public class InventoryController {
                 inventory.getName(),
                 inventory.getItemType(),
                 inventory.getSerialNumber(),
+                inventory.getInventoryNumber(),
                 inventory.getModel(),
                 inventory.getBoughtDate(),
                 inventory.getPrice(),
